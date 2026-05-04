@@ -10,9 +10,10 @@ from pywebio.output import (
     put_html,
     put_markdown,
     put_scope,
+    put_table,
     put_text,
-    use_scope,
     toast,
+    use_scope,
 )
 from pywebio.session import run_js, set_env
 
@@ -29,17 +30,15 @@ DEFAULT_INTERVALS_MIN = {
 }
 
 
-def _fmt_next(at: datetime | None) -> str:
+def _fmt_at(at: datetime | None) -> str:
     if at is None:
         return "-"
-    delta = (at - datetime.now()).total_seconds()
-    if delta < 0:
-        return "now"
-    if delta < 60:
-        return "<1m"
-    if delta < 3600:
-        return f"{int(delta // 60)}m"
-    return f"{int(delta // 3600)}h{int((delta % 3600) // 60)}m"
+    now = datetime.now()
+    if at.date() == now.date():
+        return at.strftime("%H:%M")
+    if (at.date() - now.date()).days == 1:
+        return f"明天 {at.strftime('%H:%M')}"
+    return at.strftime("%m-%d %H:%M")
 
 
 def _status_label(s: str) -> str:
@@ -51,6 +50,16 @@ def _status_label(s: str) -> str:
         "stopped": "⚫ 已停止",
         "error": "🔴 错误",
     }.get(s, s)
+
+
+def _table_hash(snap) -> tuple:
+    return tuple(
+        (
+            s.name, s.status, s.current_task, s.next_task,
+            _fmt_at(s.next_run_at), s.last_error,
+        )
+        for s in snap
+    )
 
 
 def _handle_add() -> None:
@@ -95,70 +104,102 @@ def _handle_delete(name: str) -> None:
     threading.Thread(target=runtime.remove_emulator, args=(name,), daemon=True).start()
 
 
-_HTML_SHELL = f"""
+_LOG_HTML = """
 <style>
-  #status-table {{ border-collapse: collapse; width: 100%; margin: 8px 0; }}
-  #status-table th, #status-table td {{ border: 1px solid #ddd; padding: 6px 10px; text-align: left; }}
-  #status-table thead {{ background: #f5f5f5; }}
-  #log-box {{
+  #log-tabs { display: flex; gap: 0; margin-top: 8px; flex-wrap: wrap; }
+  #log-tabs button {
+    padding: 6px 14px; border: 1px solid #ccc; border-bottom: none;
+    background: #f0f0f0; cursor: pointer; font-size: 13px;
+    margin-right: 2px; border-radius: 4px 4px 0 0;
+  }
+  #log-tabs button.active { background: white; font-weight: bold; position: relative; top: 1px; }
+  .log-box {
     max-height: 420px; overflow-y: auto;
-    border: 1px solid #ddd; padding: 8px;
+    border: 1px solid #ccc; padding: 8px;
     font-family: Consolas, "Courier New", monospace; font-size: 12px;
     background: #fafafa; line-height: 1.5;
-  }}
-  #log-box .row {{ white-space: pre; }}
+  }
+  .log-box .row { white-space: pre; }
 </style>
-<table id="status-table">
-  <thead>
-    <tr>
-      <th>模拟器</th><th>状态</th><th>当前任务</th>
-      <th>下次任务</th><th>倒计时</th><th>上次错误</th>
-    </tr>
-  </thead>
-  <tbody id="status-body"></tbody>
-</table>
-<h3>实时日志</h3>
-<div id="log-box"></div>
+<div id="log-tabs"></div>
+<div id="log-content">
+  <div data-tab="all" class="log-box"></div>
+</div>
 <script>
-window.__lastTbl = '';
-window.__updateTable = function(rows) {{
-  const json = JSON.stringify(rows);
-  if (json === window.__lastTbl) return;
-  window.__lastTbl = json;
-  const body = document.getElementById('status-body');
-  while (body.firstChild) body.removeChild(body.firstChild);
-  for (const r of rows) {{
-    const tr = document.createElement('tr');
-    for (const c of r) {{
-      const td = document.createElement('td');
-      td.textContent = c;
-      tr.appendChild(td);
-    }}
-    body.appendChild(tr);
-  }}
-  if (rows.length === 0) {{
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = 6;
-    td.style.textAlign = 'center';
-    td.style.color = '#888';
-    td.textContent = '当前没有模拟器，点上方按钮添加';
-    tr.appendChild(td);
-    body.appendChild(tr);
-  }}
-}};
-window.__appendLogs = function(lines) {{
-  const box = document.getElementById('log-box');
-  const stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
-  for (const line of lines) {{
+(function() {
+  if (window.__logInit) return;
+  window.__logInit = true;
+  window.__activeTab = 'all';
+  window.__LOG_LIMIT = 300;
+
+  function append(tab, line) {
+    const box = document.querySelector('#log-content .log-box[data-tab="' + CSS.escape(tab) + '"]');
+    if (!box) return;
+    const stick = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
     const div = document.createElement('div');
     div.className = 'row';
     div.textContent = line;
     box.appendChild(div);
-  }}
-  while (box.children.length > {LOG_DOM_LIMIT}) box.removeChild(box.firstChild);
-  if (stick) box.scrollTop = box.scrollHeight;
-}};
+    while (box.children.length > window.__LOG_LIMIT) box.removeChild(box.firstChild);
+    if (stick && box.style.display !== 'none') box.scrollTop = box.scrollHeight;
+  }
+
+  window.__switchTab = function(name) {
+    window.__activeTab = name;
+    document.querySelectorAll('#log-tabs button').forEach(b =>
+      b.classList.toggle('active', b.dataset.tab === name));
+    document.querySelectorAll('#log-content .log-box').forEach(b =>
+      b.style.display = (b.dataset.tab === name) ? '' : 'none');
+    const active = document.querySelector('#log-content .log-box[data-tab="' + CSS.escape(name) + '"]');
+    if (active) active.scrollTop = active.scrollHeight;
+  };
+
+  window.__appendLogs = function(entries) {
+    for (const e of entries) {
+      append('all', e.formatted);
+      if (e.thread && document.querySelector('#log-content .log-box[data-tab="' + CSS.escape(e.thread) + '"]')) {
+        append(e.thread, e.formatted);
+      }
+    }
+  };
+
+  window.__syncTabs = function(names) {
+    const tabsEl = document.getElementById('log-tabs');
+    const contentEl = document.getElementById('log-content');
+    if (!tabsEl.querySelector('button[data-tab="all"]')) {
+      const btn = document.createElement('button');
+      btn.dataset.tab = 'all';
+      btn.textContent = '全部';
+      btn.classList.add('active');
+      btn.onclick = () => window.__switchTab('all');
+      tabsEl.insertBefore(btn, tabsEl.firstChild);
+    }
+    const wanted = new Set(['all', ...names]);
+    tabsEl.querySelectorAll('button').forEach(b => {
+      if (!wanted.has(b.dataset.tab)) b.remove();
+    });
+    contentEl.querySelectorAll('.log-box').forEach(b => {
+      if (!wanted.has(b.dataset.tab)) b.remove();
+    });
+    for (const n of names) {
+      if (!tabsEl.querySelector('button[data-tab="' + CSS.escape(n) + '"]')) {
+        const btn = document.createElement('button');
+        btn.dataset.tab = n;
+        btn.textContent = n;
+        btn.onclick = () => window.__switchTab(n);
+        tabsEl.appendChild(btn);
+      }
+      if (!contentEl.querySelector('.log-box[data-tab="' + CSS.escape(n) + '"]')) {
+        const box = document.createElement('div');
+        box.dataset.tab = n;
+        box.className = 'log-box';
+        box.style.display = 'none';
+        contentEl.appendChild(box);
+      }
+    }
+    if (!wanted.has(window.__activeTab)) window.__switchTab('all');
+  };
+})();
 </script>
 """
 
@@ -170,50 +211,53 @@ def _app() -> None:
         [{"label": "+ 添加模拟器", "value": "add", "color": "primary"}],
         onclick=lambda _: _handle_add(),
     )
-    put_html(_HTML_SHELL)
-    put_markdown("### 操作")
-    put_scope("actions")
+    put_scope("status_table")
+    put_markdown("### 实时日志")
+    put_html(_LOG_HTML)
 
-    last_action_keys: tuple = ()
+    last_table_hash: tuple | None = None
+    last_emu_keys: tuple = ()
     last_log_id = -1
 
     while True:
         snap = runtime.list_schedulers()
 
-        rows = [
-            [
-                s.name,
-                _status_label(s.status),
-                s.current_task or "-",
-                s.next_task or "-",
-                _fmt_next(s.next_run_at),
-                s.last_error or "-",
-            ]
-            for s in snap
-        ]
-        run_js("window.__updateTable(%s)" % json.dumps(rows, ensure_ascii=False))
-
         keys = tuple(s.name for s in snap)
-        if keys != last_action_keys:
-            last_action_keys = keys
-            with use_scope("actions", clear=True):
+        if keys != last_emu_keys:
+            last_emu_keys = keys
+            run_js("window.__syncTabs(%s)" % json.dumps(list(keys), ensure_ascii=False))
+
+        h = _table_hash(snap)
+        if h != last_table_hash:
+            last_table_hash = h
+            with use_scope("status_table", clear=True):
                 if not snap:
-                    put_text("（无）")
+                    put_text("当前没有模拟器，点上方按钮添加")
                 else:
+                    rows = [["模拟器", "状态", "当前任务", "下次任务", "下次时间", "上次错误", ""]]
                     for s in snap:
-                        n = s.name
-                        put_buttons(
-                            [{"label": f"删除 {n}", "value": "del", "color": "danger"}],
-                            onclick=lambda _, name=n: _handle_delete(name),
-                            small=True,
-                        )
+                        name = s.name
+                        rows.append([
+                            name,
+                            _status_label(s.status),
+                            s.current_task or "-",
+                            s.next_task or "-",
+                            _fmt_at(s.next_run_at),
+                            s.last_error or "-",
+                            put_buttons(
+                                [{"label": "删除", "value": "del", "color": "danger"}],
+                                onclick=lambda _, n=name: _handle_delete(n),
+                                small=True,
+                            ),
+                        ])
+                    put_table(rows)
 
         with log_buffer_lock:
             new_logs = [e for e in log_buffer if e["id"] > last_log_id]
         if new_logs:
             last_log_id = new_logs[-1]["id"]
-            lines = [e["formatted"] for e in new_logs]
-            run_js("window.__appendLogs(%s)" % json.dumps(lines, ensure_ascii=False))
+            entries = [{"thread": e["thread"], "formatted": e["formatted"]} for e in new_logs]
+            run_js("window.__appendLogs(%s)" % json.dumps(entries, ensure_ascii=False))
 
         time.sleep(REFRESH_SEC)
 
