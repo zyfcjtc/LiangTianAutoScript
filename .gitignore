@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code (user-specific session/permissions)
+.claude/
+
+# dev_tools 中间产物 / 调试截图（保留 .py 和 __init__.py）
+dev_tools/last.png
+dev_tools/match_result.png
+dev_tools/click_*.png
+dev_tools/debug_*/
+
+# 日志
+*.log
