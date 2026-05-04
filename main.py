@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import yaml
@@ -6,7 +7,12 @@ from core import runtime
 from core.logger import logger
 from ui.server import serve
 
-CONFIG_PATH = Path(__file__).resolve().parent / "config.yaml"
+# PyInstaller 打包后用 .exe 旁边的 config.yaml；否则用源码目录的
+if getattr(sys, "frozen", False):
+    BASE_DIR = Path(sys.executable).resolve().parent
+else:
+    BASE_DIR = Path(__file__).resolve().parent
+CONFIG_PATH = BASE_DIR / "config.yaml"
 
 
 def main() -> None:

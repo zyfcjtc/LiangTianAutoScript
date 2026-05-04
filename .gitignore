@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 *.egg-info/
 
-# Virtual environments
+# 虚拟环境
 .venv/
 venv/
 env/
@@ -18,10 +18,10 @@ env/
 .DS_Store
 Thumbs.db
 
-# Claude Code (user-specific session/permissions)
+# Claude Code (用户私有的会话/权限文件)
 .claude/
 
-# dev_tools 中间产物 / 调试截图（保留 .py 和 __init__.py）
+# dev_tools 中间产物 / 调试截图（保留 .py）
 dev_tools/last.png
 dev_tools/match_result.png
 dev_tools/click_*.png
@@ -29,3 +29,28 @@ dev_tools/debug_*/
 
 # 日志
 *.log
+
+# PyInstaller 打包产物
+build/
+dist/
+*.spec
+
+# === 安全：以下文件绝对不要提交 ===
+# 环境变量 / 密钥
+.env
+.env.*
+*.env
+secrets/
+credentials*
+*.key
+*.pem
+*.cer
+*.crt
+*.pfx
+*.p12
+
+# 本地覆盖配置
+*.local.*
+config.local.*
+config.local.yaml
+config.private.yaml

@@ -1,15 +1,8 @@
 ui:
   port: 8080
 emulators:
-- name: aaa
-  serial: 127.0.0.1:16512
-  tasks:
-    粥棚:
-      interval_minutes: 180
-    膜拜:
-      interval_minutes: 1440
-- name: asdf
-  serial: 127.0.0.1:16480
+- name: main
+  serial: 127.0.0.1:16384
   tasks:
     粥棚:
       interval_minutes: 180
