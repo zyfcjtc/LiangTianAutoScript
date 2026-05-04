@@ -34,6 +34,7 @@ dev_tools/debug_*/
 build/
 dist/
 *.spec
+LiangtianAutoScript-*.zip
 
 # === 安全：以下文件绝对不要提交 ===
 # 环境变量 / 密钥

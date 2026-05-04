@@ -111,6 +111,37 @@ config.yaml   启动时加载的模拟器配置
 - [PyWebIO](https://github.com/pywebio/PyWebIO) — 监控 UI
 - [PyInstaller](https://pyinstaller.org/) — 打包
 
+## 致谢 / 关于 Alas
+
+本项目的整体架构（设备抽象 → 模板匹配 → Page 状态机 → 任务调度器 → Web 监控）灵感来自以下两个开源项目：
+
+- [**StarRailCopilot (SRC)**](https://github.com/LmeSzinc/StarRailCopilot) — 崩坏：星穹铁道的自动化脚本，本项目最直接的参考来源
+- [**AzurLaneAutoScript (Alas)**](https://github.com/LmeSzinc/AzurLaneAutoScript) — SRC 的前身，开创了这一类「截图—识别—点击—调度」工程框架的工程范式
+
+需要说明：
+
+- **本项目不是 SRC / Alas 的 fork**，没有复用其任何代码
+- 只是吸收了它们成熟的设计思想，例如：
+  - `Button` 对象绑定模板图 + `search_area` 限定区域的素材组织方式
+  - 用 `Page` 状态机做 UI 间寻路（虽然「这城有良田」简单到目前还没用上）
+  - 多模拟器各跑一个调度线程的并发模型
+- 从零用 Python 重写，针对「这城有良田」这种 2D 模拟经营游戏做了大幅**简化**：不需要小地图单应性变换、不需要训练数字 OCR、不需要复杂的 OCR 模型
+
+如果你想做更复杂的游戏（崩铁 / 碧蓝航线 / 原神 / 明日方舟…），**强烈建议直接读 SRC / Alas 的实现**，比看本项目收获大得多。
+
+## License
+
+GPL-3.0 — 详见 [LICENSE](LICENSE)。
+
+```
+Copyright (C) 2026 zyfcjtc
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+```
+
 ## 免责声明
 
 仅供个人学习与自用。游戏内自动化可能违反相关服务条款，使用风险自负。本项目不会提供任何破解、反调试、外挂功能。
