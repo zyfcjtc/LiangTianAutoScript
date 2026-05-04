@@ -9,10 +9,16 @@ log_buffer_lock = Lock()
 
 
 class _BufferHandler(logging.Handler):
+    def __init__(self) -> None:
+        super().__init__()
+        self._next_id = 0
+
     def emit(self, record: logging.LogRecord) -> None:
         msg = self.format(record)
         with log_buffer_lock:
+            self._next_id += 1
             log_buffer.append({
+                "id": self._next_id,
                 "level": record.levelname,
                 "thread": record.threadName,
                 "message": record.getMessage(),

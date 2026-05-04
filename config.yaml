@@ -1,19 +1,10 @@
-# Web 监控页面端口
 ui:
   port: 8080
-
-# 模拟器列表 —— 加新号就在下面复制一段
 emulators:
-  - name: 主号
-    serial: 127.0.0.1:16512
-    tasks:
-      粥棚:
-        interval_minutes: 180
-      膜拜:
-        interval_minutes: 1440
-
-  # - name: 小号
-  #   serial: 127.0.0.1:16544
-  #   tasks:
-  #     粥棚:
-  #       interval_minutes: 180
+- name: aaa
+  serial: 127.0.0.1:16512
+  tasks:
+    粥棚:
+      interval_minutes: 180
+    膜拜:
+      interval_minutes: 1440

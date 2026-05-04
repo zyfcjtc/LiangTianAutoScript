@@ -1,3 +1,4 @@
+import threading
 import time
 from datetime import datetime
 
@@ -7,15 +8,22 @@ from tasks.base import Task
 
 
 class Scheduler:
-    def __init__(self, ui: UI, tasks: list[Task], name: str = "default"):
+    def __init__(self, ui: UI, tasks: list[Task], name: str = "default", serial: str = ""):
         self.ui = ui
         self.tasks = tasks
         self.name = name
+        self.serial = serial
         self.status: str = "starting"
         self.current_task: str | None = None
         self.next_task: str | None = None
         self.next_run_at: datetime | None = None
         self.last_error: str | None = None
+        self.stop_event = threading.Event()
+        self.thread: threading.Thread | None = None
+
+    def stop(self) -> None:
+        self.stop_event.set()
+        self.status = "stopping"
 
     def _refresh_next(self) -> None:
         if not self.tasks:
@@ -29,7 +37,7 @@ class Scheduler:
     def loop(self) -> None:
         logger.info(f"Scheduler started: {[t.name for t in self.tasks]}")
         self.status = "idle"
-        while True:
+        while not self.stop_event.is_set():
             due = [t for t in self.tasks if t.due()]
             if due:
                 task = due[0]
@@ -51,4 +59,7 @@ class Scheduler:
             self._refresh_next()
             wait = max((self.next_run_at - datetime.now()).total_seconds(), 1) if self.next_run_at else 60
             logger.info(f"Idle, next: {self.next_task} in {int(wait)}s")
-            time.sleep(min(wait, 60))
+            self.stop_event.wait(timeout=min(wait, 60))
+
+        self.status = "stopped"
+        logger.info(f"Scheduler stopped")
