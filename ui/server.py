@@ -73,11 +73,11 @@ def _handle_add() -> None:
             {"label": n, "value": n} for n in all_tasks
         ]),
     ]
-    for task_name in all_tasks:
+    for i, task_name in enumerate(all_tasks):
         default = DEFAULT_INTERVALS_MIN.get(task_name, 60)
         fields.append(input(
             f"{task_name} — 间隔（分钟）",
-            name=f"interval_{task_name}",
+            name=f"interval_{i}",
             type="number",
             value=str(default),
             help_text="未勾选时忽略",
@@ -86,8 +86,9 @@ def _handle_add() -> None:
     if not data:
         return
     task_specs = {
-        t: {"interval_minutes": int(data.get(f"interval_{t}") or DEFAULT_INTERVALS_MIN.get(t, 60))}
-        for t in data["tasks"]
+        t: {"interval_minutes": int(data.get(f"interval_{i}") or DEFAULT_INTERVALS_MIN.get(t, 60))}
+        for i, t in enumerate(all_tasks)
+        if t in data["tasks"]
     }
     try:
         runtime.add_emulator(data["name"], data["serial"], task_specs)
