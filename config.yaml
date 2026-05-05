@@ -8,3 +8,5 @@ emulators:
       interval_minutes: 180
     膜拜:
       interval_minutes: 1440
+    建木营:
+      interval_minutes: 1440

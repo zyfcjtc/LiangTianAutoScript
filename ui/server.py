@@ -27,6 +27,7 @@ LOG_DOM_LIMIT = 300
 DEFAULT_INTERVALS_MIN = {
     "粥棚": 180,
     "膜拜": 1440,
+    "建木营": 1440,
 }
 
 
@@ -63,24 +64,29 @@ def _table_hash(snap) -> tuple:
 
 
 def _handle_add() -> None:
-    options = [
-        {
-            "label": f"{n} (默认 {DEFAULT_INTERVALS_MIN.get(n, 60)} 分钟)",
-            "value": n,
-            "selected": True,
-        }
-        for n in TASK_REGISTRY.keys()
-    ]
-    data = input_group("添加模拟器", [
+    all_tasks = list(TASK_REGISTRY.keys())
+    fields = [
         input("名字", name="name", required=True, placeholder="如：主号 / 小号 / 二号机"),
         input("ADB 端口", name="serial", required=True,
               value="127.0.0.1:", placeholder="例: 127.0.0.1:16512"),
-        checkbox("启用的任务", name="tasks", options=options),
-    ])
+        checkbox("启用的任务", name="tasks", options=[
+            {"label": n, "value": n} for n in all_tasks
+        ]),
+    ]
+    for task_name in all_tasks:
+        default = DEFAULT_INTERVALS_MIN.get(task_name, 60)
+        fields.append(input(
+            f"{task_name} — 间隔（分钟）",
+            name=f"interval_{task_name}",
+            type="number",
+            value=str(default),
+            help_text="未勾选时忽略",
+        ))
+    data = input_group("添加模拟器", fields)
     if not data:
         return
     task_specs = {
-        t: {"interval_minutes": DEFAULT_INTERVALS_MIN.get(t, 60)}
+        t: {"interval_minutes": int(data.get(f"interval_{t}") or DEFAULT_INTERVALS_MIN.get(t, 60))}
         for t in data["tasks"]
     }
     try:

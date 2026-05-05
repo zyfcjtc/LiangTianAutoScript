@@ -78,14 +78,22 @@ class MobaiTask(Task):
             ui.device.sleep(SLEEP)
         ui.click(tab)
         ui.device.sleep(SLEEP)
-        screen = ui.device.screenshot()
-        if match(screen, BTN_MOBAI_DONE):
-            logger.info(f"  {tab.name}: 已膜拜过，跳过")
-            return False
-        point = match(screen, BTN_MOBAI)
-        if point is None:
-            logger.warning(f"  {tab.name}: 膜拜按钮没找到")
-            return False
-        ui.device.click(*point)
-        ui.device.sleep(SLEEP)
-        return True
+
+        timeout = 15
+        elapsed = 0
+        while elapsed < timeout:
+            screen = ui.device.screenshot()
+            if match(screen, BTN_MOBAI_DONE):
+                logger.info(f"  {tab.name}: 已膜拜过，跳过")
+                return False
+            point = match(screen, BTN_MOBAI)
+            if point is not None:
+                ui.device.click(*point)
+                ui.device.sleep(SLEEP)
+                return True
+            logger.info(f"  {tab.name}: 膜拜按钮未出现，等待重试…")
+            ui.device.sleep(1)
+            elapsed += 1
+
+        logger.warning(f"  {tab.name}: 等待超时，膜拜按钮始终未找到")
+        return False
