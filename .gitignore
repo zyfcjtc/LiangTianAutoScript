@@ -21,11 +21,13 @@ Thumbs.db
 # Claude Code (用户私有的会话/权限文件)
 .claude/
 
-# dev_tools 中间产物 / 调试截图（保留 .py）
-dev_tools/last.png
-dev_tools/match_result.png
-dev_tools/click_*.png
+# dev_tools 中间产物（截图 + 测试脚本）
+dev_tools/*.png
+dev_tools/test_*.py
 dev_tools/debug_*/
+
+# 临时调试截图
+assets/aaa.png
 
 # 日志
 *.log
