@@ -69,7 +69,7 @@ class MobaiTask(Task):
         self._do_ranking(ui, PAIHANG_TABS)
 
         if ui.click(BTN_FENGLU):
-            ui.device.sleep(SLEEP)
+            ui.device.sleep(2.0)
             ui.click(BTN_CLICKOFF)
             ui.device.sleep(SLEEP)
 
