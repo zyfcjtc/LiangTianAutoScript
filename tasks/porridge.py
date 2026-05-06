@@ -1,4 +1,4 @@
-from core.template import Button, match
+from core.template import Button
 from core.ui import UI
 from tasks.base import Task
 
@@ -12,12 +12,9 @@ PORRIDGE_IN_MENU = Button(
     "pathfind/BTN_ZHOUPENG.png",
     search_area=(454, 198, 660, 524),
 )
-COLLECT = Button(
-    "porridge.BTN_COLLECT",
-    "main/BTN_PORRIDGE.png",
-    search_area=(193, 469, 284, 547),
-)
 
+COLLECT_TAP = (238, 508)   # 招揽按钮固定坐标，无需模板匹配
+ENTER_SLEEP = 2.0
 CLICK_TIMES = 15
 CLICK_INTERVAL = 0.4
 
@@ -30,16 +27,8 @@ class PorridgeTask(Task):
 
         if not ui.click(PORRIDGE_IN_MENU):
             return
-
-        point = None
-        for _ in range(20):
-            point = match(ui.device.screenshot(), COLLECT)
-            if point is not None:
-                break
-            ui.device.sleep(0.5)
-        if point is None:
-            return
+        ui.device.sleep(ENTER_SLEEP)
 
         for _ in range(CLICK_TIMES):
-            ui.device.click(*point)
+            ui.device.click(*COLLECT_TAP)
             ui.device.sleep(CLICK_INTERVAL)
