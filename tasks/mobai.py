@@ -26,6 +26,14 @@ BTN_BACK = Button(
     "common.BTN_BACK", "common/BTN_BACK.png",
     search_area=(613, 126, 705, 206),
 )
+BTN_FENGLU = Button(
+    "profile.BTN_FENGLU", "profile/BTN_FENGLU.png",
+    search_area=(72, 795, 253, 907),
+)
+BTN_CLICKOFF = Button(
+    "profile.BTN_CLICKOFF", "profile/BTN_CLICKOFF.png",
+    search_area=(77, 97, 354, 283),
+)
 BTN_PROFILE_CLOSE = Button(
     "profile.BTN_CLOSE", "profile/BTN_CLOSE.png",
     search_area=(5, 1180, 105, 1279),
@@ -59,6 +67,11 @@ class MobaiTask(Task):
             return
         ui.device.sleep(SLEEP)
         self._do_ranking(ui, PAIHANG_TABS)
+
+        if ui.click(BTN_FENGLU):
+            ui.device.sleep(SLEEP)
+            ui.click(BTN_CLICKOFF)
+            ui.device.sleep(SLEEP)
 
         ui.click(BTN_PROFILE_CLOSE)
 
