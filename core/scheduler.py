@@ -54,6 +54,7 @@ class Scheduler:
                 self.current_task = None
                 self.status = "idle"
                 self._refresh_next()
+                self.stop_event.wait(timeout=5)
                 continue
 
             self._refresh_next()
