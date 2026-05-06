@@ -31,12 +31,15 @@ class PorridgeTask(Task):
         if not ui.click(PORRIDGE_IN_MENU):
             return
 
-        if not ui.wait_until(COLLECT, timeout=8.0):
-            return
-
-        point = match(ui.device.screenshot(), COLLECT)
+        point = None
+        for _ in range(20):
+            point = match(ui.device.screenshot(), COLLECT)
+            if point is not None:
+                break
+            ui.device.sleep(0.5)
         if point is None:
             return
-        for i in range(1, CLICK_TIMES + 1):
+
+        for _ in range(CLICK_TIMES):
             ui.device.click(*point)
             ui.device.sleep(CLICK_INTERVAL)
