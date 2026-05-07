@@ -27,7 +27,7 @@ def add_emulator(
     task_specs: dict,
     mumu_instance: int | None = None,
     package: str | None = None,
-    auto_login: bool = True,
+    auto_login: bool = False,
 ) -> Scheduler:
     """task_specs: {task_name: {"interval_minutes": int}}
     Raises ValueError on validation failure, RuntimeError on connection failure.
@@ -127,8 +127,8 @@ def _save_config_locked() -> None:
             entry["mumu_instance"] = s.mumu_instance
         if s.package:
             entry["package"] = s.package
-        if not s.auto_login:
-            entry["auto_login"] = False
+        if s.auto_login:
+            entry["auto_login"] = True
         emu_list.append(entry)
     cfg["emulators"] = emu_list
     config_path.write_text(

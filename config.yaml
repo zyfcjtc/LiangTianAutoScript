@@ -7,6 +7,7 @@ emulators:
   serial: 127.0.0.1:16512
   mumu_instance: 4
   package: com.chengzhu.zcylt091.esj
+  auto_login: true
   tasks:
     粥棚:
       interval_minutes: 180

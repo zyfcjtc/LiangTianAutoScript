@@ -77,7 +77,7 @@ def _handle_add() -> None:
               help_text="如: com.chengzhu.zcylt091.esj"),
         checkbox("启动选项", name="auto_login", options=[
             {"label": "自动启动游戏并登录", "value": "1"},
-        ], value=["1"]),
+        ]),
         checkbox("启用的任务", name="tasks", options=[
             {"label": n, "value": n} for n in all_tasks
         ]),

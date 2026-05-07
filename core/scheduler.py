@@ -16,7 +16,7 @@ class Scheduler:
         serial: str = "",
         mumu_instance: int | None = None,
         package: str | None = None,
-        auto_login: bool = True,
+        auto_login: bool = False,
     ):
         self.ui = ui
         self.tasks = tasks
