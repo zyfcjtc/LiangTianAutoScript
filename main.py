@@ -35,6 +35,8 @@ def main() -> None:
                 emu["serial"],
                 emu.get("tasks") or {},
                 mumu_instance=emu.get("mumu_instance"),
+                package=emu.get("package"),
+                auto_login=emu.get("auto_login", True),
             )
         except Exception as e:
             logger.error(f"启动模拟器 {emu.get('name')} 失败: {e}")

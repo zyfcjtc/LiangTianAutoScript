@@ -26,6 +26,8 @@ def add_emulator(
     serial: str,
     task_specs: dict,
     mumu_instance: int | None = None,
+    package: str | None = None,
+    auto_login: bool = True,
 ) -> Scheduler:
     """task_specs: {task_name: {"interval_minutes": int}}
     Raises ValueError on validation failure, RuntimeError on connection failure.
@@ -39,17 +41,27 @@ def add_emulator(
     if not serial:
         raise ValueError("端口不能为空")
 
+    # 快速校验重名（短暂持锁）
     with _lock:
         if any(s.name == name for s in schedulers):
             raise ValueError(f"模拟器名 '{name}' 已存在")
 
-        # 若配置了实例编号且 ADB 不可达，自动启动模拟器
-        if mumu_instance is not None:
-            exe = mumu_exe or launcher.find_mumu_exe()
-            if exe:
-                launcher.ensure_running(serial, exe, mumu_instance)
-            else:
-                logger.warning("未找到 MuMuPlayer.exe，跳过自动启动")
+    # 启动模拟器 + 游戏（耗时操作，锁外执行）
+    if mumu_instance is not None:
+        exe = mumu_exe or launcher.find_mumu_exe()
+        if exe:
+            launcher.ensure_running(serial, exe, mumu_instance)
+        else:
+            logger.warning("未找到 MuMuPlayer.exe，跳过自动启动")
+
+    if package and auto_login:
+        launcher.ensure_game_running(serial, package)
+
+    # 建立设备连接并注册调度器（持锁）
+    with _lock:
+        # 二次校验（防并发重复添加）
+        if any(s.name == name for s in schedulers):
+            raise ValueError(f"模拟器名 '{name}' 已存在")
 
         try:
             device = Device(serial)
@@ -65,7 +77,8 @@ def add_emulator(
 
         sched = Scheduler(
             PageUI(device, []), tasks,
-            name=name, serial=serial, mumu_instance=mumu_instance,
+            name=name, serial=serial,
+            mumu_instance=mumu_instance, package=package, auto_login=auto_login,
         )
         thread = threading.Thread(target=sched.loop, name=name, daemon=True)
         sched.thread = thread
@@ -112,6 +125,10 @@ def _save_config_locked() -> None:
         }
         if s.mumu_instance is not None:
             entry["mumu_instance"] = s.mumu_instance
+        if s.package:
+            entry["package"] = s.package
+        if not s.auto_login:
+            entry["auto_login"] = False
         emu_list.append(entry)
     cfg["emulators"] = emu_list
     config_path.write_text(

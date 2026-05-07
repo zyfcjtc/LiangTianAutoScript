@@ -15,12 +15,16 @@ class Scheduler:
         name: str = "default",
         serial: str = "",
         mumu_instance: int | None = None,
+        package: str | None = None,
+        auto_login: bool = True,
     ):
         self.ui = ui
         self.tasks = tasks
         self.name = name
         self.serial = serial
         self.mumu_instance = mumu_instance
+        self.package = package
+        self.auto_login = auto_login
         self.status: str = "starting"
         self.current_task: str | None = None
         self.next_task: str | None = None

@@ -72,6 +72,12 @@ def _handle_add() -> None:
         input("MuMu 实例编号", name="mumu_instance", type="number",
               placeholder="留空则不自动启动",
               help_text="实例 0 → 端口 16384，实例 1 → 16416，以此类推"),
+        input("游戏包名", name="package",
+              placeholder="留空则不自动启动游戏",
+              help_text="如: com.chengzhu.zcylt091.esj"),
+        checkbox("启动选项", name="auto_login", options=[
+            {"label": "自动启动游戏并登录", "value": "1"},
+        ], value=["1"]),
         checkbox("启用的任务", name="tasks", options=[
             {"label": n, "value": n} for n in all_tasks
         ]),
@@ -96,7 +102,12 @@ def _handle_add() -> None:
         if t in data["tasks"]
     }
     try:
-        runtime.add_emulator(data["name"], data["serial"], task_specs, mumu_instance=mumu_instance)
+        package = data.get("package") or None
+        auto_login = "1" in (data.get("auto_login") or [])
+        runtime.add_emulator(
+            data["name"], data["serial"], task_specs,
+            mumu_instance=mumu_instance, package=package, auto_login=auto_login,
+        )
         toast(f"已添加 {data['name']}", color="success")
     except Exception as e:
         toast(f"添加失败: {e}", color="error", duration=6)
