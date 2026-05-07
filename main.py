@@ -42,7 +42,15 @@ def main() -> None:
             logger.error(f"启动模拟器 {emu.get('name')} 失败: {e}")
 
     logger.info(f"UI 启动: http://127.0.0.1:{runtime.ui_port}")
-    serve(port=runtime.ui_port)
+    try:
+        serve(port=runtime.ui_port)
+    except OSError as e:
+        if "10048" in str(e) or "address already in use" in str(e).lower():
+            logger.error(
+                f"端口 {runtime.ui_port} 已被占用，请先关闭上一个脚本实例再重新启动。"
+            )
+            sys.exit(1)
+        raise
 
 
 if __name__ == "__main__":
