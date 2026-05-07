@@ -47,12 +47,19 @@ def is_adb_ready(serial: str) -> bool:
         return False
 
 
-def _is_game_foreground(serial: str, package: str) -> bool:
+# 这些 Activity 出现时说明还在登录流程中，不算"已进主城"
+_LOGIN_ACTIVITIES = ("cn.ewan.supersdk.activity",)
+
+
+def _is_in_game(serial: str, package: str) -> bool:
+    """包名在前台且不在登录流程中（即已进主城）才返回 True。"""
     try:
         focus = adb.device(serial=serial).shell(
             "dumpsys window | grep mCurrentFocus"
         ).strip()
-        return package in focus
+        if package not in focus:
+            return False
+        return not any(act in focus for act in _LOGIN_ACTIVITIES)
     except Exception:
         return False
 
@@ -84,9 +91,9 @@ def ensure_running(serial: str, exe: str, instance: int, timeout: int = _LAUNCH_
 
 
 def ensure_game_running(serial: str, package: str) -> None:
-    """确保游戏在前台运行；未运行则启动并完成登录流程。"""
-    if _is_game_foreground(serial, package):
-        logger.info(f"Game already in foreground, skipping launch")
+    """确保游戏已进主城；已在主城则直接跳过，否则启动并完成登录流程。"""
+    if _is_in_game(serial, package):
+        logger.info("Game already in main city, skipping login")
         return
 
     d = adb.device(serial=serial)
