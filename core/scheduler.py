@@ -17,6 +17,7 @@ class Scheduler:
         mumu_instance: int | None = None,
         package: str | None = None,
         auto_login: bool = False,
+        run_once: bool = False,
     ):
         self.ui = ui
         self.tasks = tasks
@@ -25,6 +26,7 @@ class Scheduler:
         self.mumu_instance = mumu_instance
         self.package = package
         self.auto_login = auto_login
+        self.run_once = run_once
         self.status: str = "starting"
         self.current_task: str | None = None
         self.next_task: str | None = None
@@ -46,33 +48,45 @@ class Scheduler:
         self.next_task = nxt.name
         self.next_run_at = nxt.next_run
 
+    def _run_task(self, task: Task) -> None:
+        self.status = "running"
+        self.current_task = task.name
+        logger.info(f"Run: {task.name}")
+        try:
+            task.run(self.ui)
+            self.last_error = None
+        except Exception as e:
+            logger.exception(f"Task failed: {task.name}")
+            self.last_error = f"{task.name}: {e}"
+        task.reschedule()
+        self.current_task = None
+
     def loop(self) -> None:
         logger.info(f"Scheduler started: {[t.name for t in self.tasks]}")
         self.status = "idle"
-        while not self.stop_event.is_set():
-            due = [t for t in self.tasks if t.due()]
-            if due:
-                task = due[0]
-                self.status = "running"
-                self.current_task = task.name
-                logger.info(f"Run: {task.name}")
-                try:
-                    task.run(self.ui)
-                    self.last_error = None
-                except Exception as e:
-                    logger.exception(f"Task failed: {task.name}")
-                    self.last_error = f"{task.name}: {e}"
-                task.reschedule()
-                self.current_task = None
-                self.status = "idle"
+
+        if self.run_once:
+            for task in self.tasks:
+                if self.stop_event.is_set():
+                    break
+                self._run_task(task)
                 self._refresh_next()
                 self.stop_event.wait(timeout=5)
-                continue
+            logger.info(f"Run-once complete: {self.name}")
+        else:
+            while not self.stop_event.is_set():
+                due = [t for t in self.tasks if t.due()]
+                if due:
+                    self._run_task(due[0])
+                    self.status = "idle"
+                    self._refresh_next()
+                    self.stop_event.wait(timeout=5)
+                    continue
 
-            self._refresh_next()
-            wait = max((self.next_run_at - datetime.now()).total_seconds(), 1) if self.next_run_at else 60
-            logger.info(f"Idle, next: {self.next_task} in {int(wait)}s")
-            self.stop_event.wait(timeout=min(wait, 60))
+                self._refresh_next()
+                wait = max((self.next_run_at - datetime.now()).total_seconds(), 1) if self.next_run_at else 60
+                logger.info(f"Idle, next: {self.next_task} in {int(wait)}s")
+                self.stop_event.wait(timeout=min(wait, 60))
 
         self.status = "stopped"
         logger.info(f"Scheduler stopped")

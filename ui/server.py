@@ -77,6 +77,7 @@ def _handle_add() -> None:
               help_text="如: com.chengzhu.zcylt091.esj"),
         checkbox("启动选项", name="auto_login", options=[
             {"label": "自动启动游戏并登录", "value": "1"},
+            {"label": "跑完所有任务后自动关闭（关游戏 + 关模拟器 + 退出脚本）", "value": "run_once"},
         ]),
         checkbox("启用的任务", name="tasks", options=[
             {"label": n, "value": n} for n in all_tasks
@@ -103,10 +104,13 @@ def _handle_add() -> None:
     }
     try:
         package = data.get("package") or None
-        auto_login = "1" in (data.get("auto_login") or [])
+        opts = data.get("auto_login") or []
+        auto_login = "1" in opts
+        run_once = "run_once" in opts
         runtime.add_emulator(
             data["name"], data["serial"], task_specs,
-            mumu_instance=mumu_instance, package=package, auto_login=auto_login,
+            mumu_instance=mumu_instance, package=package,
+            auto_login=auto_login, run_once=run_once,
         )
         toast(f"已添加 {data['name']}", color="success")
     except Exception as e:

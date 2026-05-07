@@ -1,4 +1,7 @@
+import os
+import subprocess
 import threading
+import time
 from pathlib import Path
 
 import yaml
@@ -28,6 +31,7 @@ def add_emulator(
     mumu_instance: int | None = None,
     package: str | None = None,
     auto_login: bool = False,
+    run_once: bool = False,
 ) -> Scheduler:
     """task_specs: {task_name: {"interval_minutes": int}}
     Raises ValueError on validation failure, RuntimeError on connection failure.
@@ -78,7 +82,8 @@ def add_emulator(
         sched = Scheduler(
             PageUI(device, []), tasks,
             name=name, serial=serial,
-            mumu_instance=mumu_instance, package=package, auto_login=auto_login,
+            mumu_instance=mumu_instance, package=package,
+            auto_login=auto_login, run_once=run_once,
         )
         thread = threading.Thread(target=sched.loop, name=name, daemon=True)
         sched.thread = thread
@@ -86,7 +91,12 @@ def add_emulator(
         schedulers.append(sched)
         _save_config_locked()
         logger.info(f"已添加模拟器: {name} ({serial})")
-        return sched
+
+    # 若有 run_once 调度器，启动收尾 watcher
+    if run_once:
+        _ensure_shutdown_watcher()
+
+    return sched
 
 
 def remove_emulator(name: str, join_timeout: float = 30.0) -> bool:
@@ -106,6 +116,63 @@ def remove_emulator(name: str, join_timeout: float = 30.0) -> bool:
     logger.info(f"已删除模拟器: {name}")
     return True
 
+
+# ── run_once 收尾 ────────────────────────────────────────────────────────────
+
+_watcher_started = False
+_watcher_lock = threading.Lock()
+
+
+def _ensure_shutdown_watcher() -> None:
+    global _watcher_started
+    with _watcher_lock:
+        if _watcher_started:
+            return
+        _watcher_started = True
+    t = threading.Thread(target=_shutdown_watcher, name="shutdown-watcher", daemon=True)
+    t.start()
+
+
+def _shutdown_watcher() -> None:
+    """等所有 run_once 调度器跑完，关游戏 → 关 MuMu → 退出进程。"""
+    while True:
+        time.sleep(3)
+        with _lock:
+            run_once = [s for s in schedulers if s.run_once]
+        if not run_once:
+            continue
+        if not all(s.status == "stopped" for s in run_once):
+            continue
+
+        logger.info("所有任务已完成，开始收尾关闭...")
+
+        exe = mumu_exe or launcher.find_mumu_exe()
+        for s in run_once:
+            # 关游戏
+            if s.package:
+                try:
+                    from adbutils import adb
+                    adb.device(serial=s.serial).shell(f"am force-stop {s.package}")
+                    logger.info(f"已关闭游戏 ({s.serial})")
+                except Exception:
+                    pass
+
+            # 关 MuMu
+            if s.mumu_instance is not None and exe:
+                mgr = launcher._find_manager(exe)
+                if mgr:
+                    subprocess.run(
+                        [mgr, "control", "-v", str(s.mumu_instance), "shutdown"],
+                        capture_output=True,
+                    )
+                    logger.info(f"已关闭 MuMu 实例 {s.mumu_instance}")
+
+        time.sleep(2)
+        logger.info("退出脚本")
+        os._exit(0)
+
+
+# ── 持久化 ───────────────────────────────────────────────────────────────────
 
 def _save_config_locked() -> None:
     if config_path is None:
@@ -129,6 +196,8 @@ def _save_config_locked() -> None:
             entry["package"] = s.package
         if s.auto_login:
             entry["auto_login"] = True
+        if s.run_once:
+            entry["run_once"] = True
         emu_list.append(entry)
     cfg["emulators"] = emu_list
     config_path.write_text(
