@@ -16,10 +16,17 @@ CONFIG_PATH = BASE_DIR / "config.yaml"
 
 
 def main() -> None:
+    from core import launcher
+
     config = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8")) or {}
 
     runtime.config_path = CONFIG_PATH
     runtime.ui_port = config.get("ui", {}).get("port", 8080)
+
+    mumu_cfg = config.get("mumu") or {}
+    runtime.mumu_exe = mumu_cfg.get("exe") or launcher.find_mumu_exe()
+    if runtime.mumu_exe:
+        logger.info(f"MuMu 路径: {runtime.mumu_exe}")
 
     for emu in config.get("emulators", []):
         try:
@@ -27,6 +34,7 @@ def main() -> None:
                 emu["name"],
                 emu["serial"],
                 emu.get("tasks") or {},
+                mumu_instance=emu.get("mumu_instance"),
             )
         except Exception as e:
             logger.error(f"启动模拟器 {emu.get('name')} 失败: {e}")

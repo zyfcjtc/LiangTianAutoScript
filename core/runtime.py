@@ -4,6 +4,7 @@ from pathlib import Path
 import yaml
 
 from core.device import Device
+from core import launcher
 from core.logger import logger
 from core.scheduler import Scheduler
 from core.ui import UI as PageUI
@@ -12,6 +13,7 @@ _lock = threading.Lock()
 schedulers: list[Scheduler] = []
 config_path: Path | None = None
 ui_port: int = 8080
+mumu_exe: str | None = None
 
 
 def list_schedulers() -> list[Scheduler]:
@@ -19,7 +21,12 @@ def list_schedulers() -> list[Scheduler]:
         return list(schedulers)
 
 
-def add_emulator(name: str, serial: str, task_specs: dict) -> Scheduler:
+def add_emulator(
+    name: str,
+    serial: str,
+    task_specs: dict,
+    mumu_instance: int | None = None,
+) -> Scheduler:
     """task_specs: {task_name: {"interval_minutes": int}}
     Raises ValueError on validation failure, RuntimeError on connection failure.
     """
@@ -36,6 +43,14 @@ def add_emulator(name: str, serial: str, task_specs: dict) -> Scheduler:
         if any(s.name == name for s in schedulers):
             raise ValueError(f"模拟器名 '{name}' 已存在")
 
+        # 若配置了实例编号且 ADB 不可达，自动启动模拟器
+        if mumu_instance is not None:
+            exe = mumu_exe or launcher.find_mumu_exe()
+            if exe:
+                launcher.ensure_running(serial, exe, mumu_instance)
+            else:
+                logger.warning("未找到 MuMuPlayer.exe，跳过自动启动")
+
         try:
             device = Device(serial)
         except Exception as e:
@@ -48,7 +63,10 @@ def add_emulator(name: str, serial: str, task_specs: dict) -> Scheduler:
                 raise ValueError(f"未知任务: {task_name}")
             tasks.append(cls(name=task_name, **(cfg or {})))
 
-        sched = Scheduler(PageUI(device, []), tasks, name=name, serial=serial)
+        sched = Scheduler(
+            PageUI(device, []), tasks,
+            name=name, serial=serial, mumu_instance=mumu_instance,
+        )
         thread = threading.Thread(target=sched.loop, name=name, daemon=True)
         sched.thread = thread
         thread.start()
@@ -79,20 +97,23 @@ def remove_emulator(name: str, join_timeout: float = 30.0) -> bool:
 def _save_config_locked() -> None:
     if config_path is None:
         return
-    cfg = {
-        "ui": {"port": ui_port},
-        "emulators": [
-            {
-                "name": s.name,
-                "serial": s.serial,
-                "tasks": {
-                    t.name: {"interval_minutes": t.interval_minutes}
-                    for t in s.tasks
-                },
-            }
-            for s in schedulers
-        ],
-    }
+    cfg: dict = {"ui": {"port": ui_port}}
+    if mumu_exe:
+        cfg["mumu"] = {"exe": mumu_exe}
+    emu_list = []
+    for s in schedulers:
+        entry: dict = {
+            "name": s.name,
+            "serial": s.serial,
+            "tasks": {
+                t.name: {"interval_minutes": t.interval_minutes}
+                for t in s.tasks
+            },
+        }
+        if s.mumu_instance is not None:
+            entry["mumu_instance"] = s.mumu_instance
+        emu_list.append(entry)
+    cfg["emulators"] = emu_list
     config_path.write_text(
         yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False),
         encoding="utf-8",

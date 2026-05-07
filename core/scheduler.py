@@ -8,11 +8,19 @@ from tasks.base import Task
 
 
 class Scheduler:
-    def __init__(self, ui: UI, tasks: list[Task], name: str = "default", serial: str = ""):
+    def __init__(
+        self,
+        ui: UI,
+        tasks: list[Task],
+        name: str = "default",
+        serial: str = "",
+        mumu_instance: int | None = None,
+    ):
         self.ui = ui
         self.tasks = tasks
         self.name = name
         self.serial = serial
+        self.mumu_instance = mumu_instance
         self.status: str = "starting"
         self.current_task: str | None = None
         self.next_task: str | None = None

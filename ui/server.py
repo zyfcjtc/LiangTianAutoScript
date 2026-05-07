@@ -69,6 +69,9 @@ def _handle_add() -> None:
         input("名字", name="name", required=True, placeholder="如：主号 / 小号 / 二号机"),
         input("ADB 端口", name="serial", required=True,
               value="127.0.0.1:", placeholder="例: 127.0.0.1:16512"),
+        input("MuMu 实例编号", name="mumu_instance", type="number",
+              placeholder="留空则不自动启动",
+              help_text="实例 0 → 端口 16384，实例 1 → 16416，以此类推"),
         checkbox("启用的任务", name="tasks", options=[
             {"label": n, "value": n} for n in all_tasks
         ]),
@@ -85,13 +88,15 @@ def _handle_add() -> None:
     data = input_group("添加模拟器", fields)
     if not data:
         return
+    raw_instance = data.get("mumu_instance")
+    mumu_instance = int(raw_instance) if raw_instance not in (None, "") else None
     task_specs = {
         t: {"interval_minutes": int(data.get(f"interval_{i}") or DEFAULT_INTERVALS_MIN.get(t, 60))}
         for i, t in enumerate(all_tasks)
         if t in data["tasks"]
     }
     try:
-        runtime.add_emulator(data["name"], data["serial"], task_specs)
+        runtime.add_emulator(data["name"], data["serial"], task_specs, mumu_instance=mumu_instance)
         toast(f"已添加 {data['name']}", color="success")
     except Exception as e:
         toast(f"添加失败: {e}", color="error", duration=6)

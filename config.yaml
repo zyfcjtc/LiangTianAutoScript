@@ -1,8 +1,11 @@
 ui:
   port: 8080
+mumu:
+  exe: C:\Program Files\Netease\MuMuPlayer-12.0\shell\MuMuPlayer.exe
 emulators:
 - name: main
-  serial: 127.0.0.1:16384
+  serial: 127.0.0.1:16512
+  mumu_instance: 4
   tasks:
     粥棚:
       interval_minutes: 180
