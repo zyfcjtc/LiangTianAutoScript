@@ -68,7 +68,7 @@ def _handle_add() -> None:
     fields = [
         input("名字", name="name", required=True, placeholder="如：主号 / 小号 / 二号机"),
         input("ADB 端口", name="serial", required=True,
-              value="127.0.0.1:", placeholder="例: 127.0.0.1:16512"),
+              value="127.0.0.1:16384", placeholder="例: 127.0.0.1:16512"),
         input("MuMu 实例编号", name="mumu_instance", type="number",
               placeholder="留空则不自动启动",
               help_text="实例 0 → 端口 16384，实例 1 → 16416，以此类推"),

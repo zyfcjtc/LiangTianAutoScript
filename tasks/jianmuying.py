@@ -8,11 +8,6 @@ PATHFIND = Button(
     "main/BTN_PATHFIND.png",
     search_area=(635, 643, 717, 735),
 )
-JMY_IN_MENU = Button(
-    "pathfind.BTN_JIANMUYING",
-    "pathfind/BTN_JIANMUYING.png",
-    search_area=(200, 450, 570, 850),
-)
 # 建木营内图标（4 类，每类最多 3 个）
 # 模板截的是静态建筑背景，点击时加偏移量指向左上角的收集图标
 ICON_AREA = (0, 150, 720, 1200)
@@ -52,7 +47,7 @@ class JianmuyingTask(Task):
             return
         ui.device.sleep(0.8)
 
-        if not ui.click(JMY_IN_MENU):
+        if not ui.click_text("建木营", search_area=(200, 450, 570, 850)):
             return
         ui.device.sleep(ENTER_SLEEP)
 

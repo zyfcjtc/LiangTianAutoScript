@@ -18,8 +18,12 @@ pyinstaller `
     --collect-all pywebio `
     main.py
 
-Write-Host "==> 复制 config.yaml 到 dist/" -ForegroundColor Cyan
-Copy-Item config.yaml dist/
+Write-Host "==> 写入默认 config.yaml 到 dist/" -ForegroundColor Cyan
+@"
+ui:
+  port: 8080
+emulators: []
+"@ | Set-Content dist\config.yaml -Encoding utf8
 
 Write-Host ""
 Write-Host "成功！产物在 dist/" -ForegroundColor Green

@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from core.device import Device
 from core.logger import logger
+from core.ocr import find_text
 from core.template import Button, appear, match
 
 
@@ -44,6 +45,24 @@ class UI:
                 return True
             time.sleep(interval)
         logger.warning(f"Not found: {button.name}")
+        return False
+
+    def click_text(
+        self,
+        text: str,
+        search_area: tuple | None = None,
+        timeout: float = 5.0,
+        threshold: float = 0.5,
+    ) -> bool:
+        end = time.time() + timeout
+        while time.time() < end:
+            point = find_text(self.device.screenshot(), text,
+                              search_area=search_area, threshold=threshold)
+            if point:
+                self.device.click(*point)
+                logger.info(f"Click text={text!r} @ {point}")
+                return True
+        logger.warning(f"Not found text: {text!r}")
         return False
 
     def goto(self, target: str, max_steps: int = 6) -> bool:

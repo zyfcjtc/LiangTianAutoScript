@@ -1,27 +1,14 @@
+import time
+
 from core.logger import logger
-from core.template import Button, match
+from core.ocr import scan_texts
+from core.template import Button
 from core.ui import UI
 from tasks.base import Task
 
 # 头像图每个账号不同，用固定坐标点击（区域中心）
 AVATAR_TAP = (67, 149)
 
-BTN_KUAFU = Button(
-    "profile.BTN_KUAFU", "profile/BTN_KUAFU.png",
-    search_area=(459, 1189, 545, 1285),
-)
-BTN_PAIHANG = Button(
-    "profile.BTN_PAIHANG", "profile/BTN_PAIHANG.png",
-    search_area=(545, 1192, 630, 1282),
-)
-BTN_MOBAI = Button(
-    "rank.BTN_MOBAI", "rank/BTN_MOBAI.png",
-    search_area=(257, 1021, 447, 1108),
-)
-BTN_MOBAI_DONE = Button(
-    "rank.BTN_MOBAI_DONE", "rank/BTN_MOBAI_DONE.png",
-    search_area=(279, 1026, 438, 1112),
-)
 BTN_BACK = Button(
     "common.BTN_BACK", "common/BTN_BACK.png",
     search_area=(613, 126, 705, 206),
@@ -39,16 +26,11 @@ BTN_PROFILE_CLOSE = Button(
     search_area=(5, 1180, 105, 1279),
 )
 
-KUAFU_TABS = [
-    Button("rank.TAB_KUAFU_XIANYI", "rank/TAB_1.png", search_area=(294, 1125, 420, 1210)),
-    Button("rank.TAB_KUAFU_RONGCHE", "rank/TAB_2.png", search_area=(422, 1123, 548, 1203)),
-    Button("rank.TAB_KUAFU_SHUISHOU", "rank/TAB_3.png", search_area=(556, 1126, 674, 1200)),
-]
-PAIHANG_TABS = [
-    Button("rank.TAB_PAIHANG_XIANYI", "rank/TAB_PAIHANG_1.png", search_area=(298, 1125, 423, 1209)),
-    Button("rank.TAB_PAIHANG_SHUISHOU", "rank/TAB_PAIHANG_2.png", search_area=(420, 1120, 548, 1203)),
-    Button("rank.TAB_PAIHANG_YANWU", "rank/TAB_PAIHANG_3.png", search_area=(551, 1123, 676, 1199)),
-]
+# OCR 识别 tab 文字，不依赖模板颜色
+KUAFU_TAB_TEXTS  = ["县邑评分", "戎车评分", "税收"]
+PAIHANG_TAB_TEXTS = ["县邑评分", "税收", "演武场"]
+TAB_AREA   = (280, 1120, 680, 1215)  # 覆盖所有 tab 的搜索区
+MOBAI_AREA = (257, 1021, 447, 1108)  # 膜拜/已膜拜 按钮区
 
 SLEEP = 1.5
 
@@ -58,15 +40,15 @@ class MobaiTask(Task):
         ui.device.click(*AVATAR_TAP)
         ui.device.sleep(SLEEP)
 
-        if not ui.click(BTN_KUAFU):
+        if not ui.click_text("跨服榜", search_area=(459, 1189, 545, 1285)):
             return
         ui.device.sleep(SLEEP)
-        self._do_ranking(ui, KUAFU_TABS)
+        self._do_ranking(ui, KUAFU_TAB_TEXTS)
 
-        if not ui.click(BTN_PAIHANG):
+        if not ui.click_text("排行榜", search_area=(545, 1192, 630, 1282)):
             return
         ui.device.sleep(SLEEP)
-        self._do_ranking(ui, PAIHANG_TABS)
+        self._do_ranking(ui, PAIHANG_TAB_TEXTS)
 
         if ui.click(BTN_FENGLU):
             ui.device.sleep(2.0)
@@ -75,38 +57,40 @@ class MobaiTask(Task):
 
         ui.click(BTN_PROFILE_CLOSE)
 
-    def _do_ranking(self, ui: UI, tabs: list[Button]) -> None:
+    def _do_ranking(self, ui: UI, tab_texts: list[str]) -> None:
         popup = False
-        for tab in tabs:
-            popup = self._mobai_tab(ui, tab, dismiss_first=popup)
+        for i, text in enumerate(tab_texts):
+            # 第一个 tab 打开时已默认选中，不需要点击
+            popup = self._mobai_tab(ui, text, dismiss_first=popup, click_tab=(i > 0))
         if popup:
             ui.click(BTN_BACK)
             ui.device.sleep(SLEEP)
         ui.click(BTN_BACK)
         ui.device.sleep(SLEEP)
 
-    def _mobai_tab(self, ui: UI, tab: Button, dismiss_first: bool) -> bool:
+    def _mobai_tab(self, ui: UI, tab_text: str, dismiss_first: bool, click_tab: bool = True) -> bool:
         if dismiss_first:
-            ui.click(tab)
+            ui.click_text(tab_text, search_area=TAB_AREA)
             ui.device.sleep(SLEEP)
-        ui.click(tab)
-        ui.device.sleep(SLEEP)
+        if click_tab:
+            ui.click_text(tab_text, search_area=TAB_AREA)
+            ui.device.sleep(SLEEP)
 
-        timeout = 15
-        elapsed = 0
-        while elapsed < timeout:
-            screen = ui.device.screenshot()
-            if match(screen, BTN_MOBAI_DONE):
-                logger.info(f"  {tab.name}: 已膜拜过，跳过")
+        end = time.time() + 15
+        while time.time() < end:
+            hits = scan_texts(ui.device.screenshot(), search_area=MOBAI_AREA)
+            # 先判断"已膜拜"（包含"膜拜"子串，需优先检查）
+            done_pt = next((pt for t, pt in hits if "已膜拜" in t), None)
+            if done_pt is not None:
+                logger.info(f"  {tab_text}: 已膜拜过，跳过")
                 return False
-            point = match(screen, BTN_MOBAI)
-            if point is not None:
-                ui.device.click(*point)
+            mobai_pt = next((pt for t, pt in hits if "膜拜" in t), None)
+            if mobai_pt is not None:
+                ui.device.click(*mobai_pt)
                 ui.device.sleep(SLEEP)
                 return True
-            logger.info(f"  {tab.name}: 膜拜按钮未出现，等待重试…")
+            logger.info(f"  {tab_text}: 膜拜按钮未出现，等待重试…")
             ui.device.sleep(1)
-            elapsed += 1
 
-        logger.warning(f"  {tab.name}: 等待超时，膜拜按钮始终未找到")
+        logger.warning(f"  {tab_text}: 等待超时，膜拜按钮始终未找到")
         return False
