@@ -4,16 +4,19 @@ setlocal
 for /f "tokens=*" %%i in ('git describe --tags --abbrev=0 2^>nul') do set TAG=%%i
 if "%TAG%"=="" set TAG=vdev
 set VERSION=%TAG:~1%
-echo ==> Version: %VERSION%
+echo ==^> Version: %VERSION%
 
 echo %VERSION%> version.txt
 
-echo ==> Clean old artifacts
+echo ==^> Clean old artifacts
+if exist Build del /f Build
+if exist Clean del /f Clean
+if exist Version del /f Version
 if exist build rmdir /s /q build
 if exist dist  rmdir /s /q dist
 if exist LiangtianAutoScript.spec del LiangtianAutoScript.spec
 
-echo ==> Build
+echo ==^> Build
 .venv\Scripts\pyinstaller.exe ^
     --onefile ^
     --windowed ^
@@ -28,16 +31,16 @@ echo ==> Build
     main.py
 if errorlevel 1 goto :fail
 
-echo ==> Write dist\config.yaml
+echo ==^> Write dist\config.yaml
 (echo ui:& echo   port: 8080& echo emulators: []) > dist\config.yaml
 
-echo ==> Copy version.txt to dist\
+echo ==^> Copy version.txt to dist\
 copy version.txt dist\version.txt >nul
 
-echo ==> Create full ZIP
+echo ==^> Create full ZIP
 powershell -Command "Compress-Archive -Path dist\* -DestinationPath LiangtianAutoScript-v%VERSION%.zip -Force"
 
-echo ==> Create patch ZIP (tasks + assets only)
+echo ==^> Create patch ZIP (tasks + assets only)
 if exist patch_tmp rmdir /s /q patch_tmp
 mkdir patch_tmp\tasks
 mkdir patch_tmp\assets
