@@ -12,6 +12,7 @@ Write-Host "==> 打包" -ForegroundColor Cyan
 pyinstaller `
     --onefile `
     --name LiangtianAutoScript `
+    --icon "assets\app.ico" `
     --add-data "assets;assets" `
     --hidden-import pywebio `
     --hidden-import adbutils `
