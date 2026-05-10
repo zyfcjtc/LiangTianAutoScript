@@ -2,16 +2,4 @@ ui:
   port: 8080
 mumu:
   exe: C:\Program Files\Netease\MuMu\nx_main\MuMuNxMain.exe
-emulators:
-- name: main1
-  serial: 127.0.0.1:16512
-  tasks:
-    粥棚:
-      interval_minutes: 180
-    膜拜:
-      interval_minutes: 1440
-    建木营:
-      interval_minutes: 1440
-  mumu_instance: 4
-  package: com.chengzhu.zcylt091.esj
-  auto_login: true
+emulators: []
