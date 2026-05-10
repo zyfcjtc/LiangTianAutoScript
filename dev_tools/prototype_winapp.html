@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>良田自动脚本 — 界面原型</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent:        #5B67E8;
+  --accent-light:  #EEF2FF;
+  --accent-border: #C7D2FE;
+  --top-strip:     #F59E0B;
+  --bg:            #FFFFFF;
+  --bg-strip:      #F8F9FF;
+  --bg-nav:        #F2F3F8;
+  --bg-nav-hover:  #E8EAEF;
+  --bg-card:       #FAFBFC;
+  --border:        #E4E6EE;
+  --text:          #1A1D23;
+  --text-dim:      #5A6070;
+  --text-muted:    #9CA3AF;
+  --green:         #10B981;
+  --amber:         #F59E0B;
+  --red:           #EF4444;
+  --blue:          #3B82F6;
+  --clr-idle:      #10B981;
+  --clr-run:       #F59E0B;
+  --clr-err:       #EF4444;
+  --clr-stop:      #9CA3AF;
+}
+
+body {
+  font-family: "Microsoft YaHei UI","Segoe UI",-apple-system,sans-serif;
+  font-size: 13px;
+  background: #CDD1DA;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+/* ─── App Window ─────────────────────────────────────────────────── */
+.app-window {
+  width: 1040px;
+  height: 700px;
+  background: var(--bg);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 24px 72px rgba(0,0,0,0.30), 0 4px 16px rgba(0,0,0,0.12);
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+/* ─── Amber top strip ────────────────────────────────────────────── */
+.top-strip {
+  height: 3px;
+  background: linear-gradient(90deg, #F59E0B 0%, #FCD34D 50%, #F59E0B 100%);
+  flex-shrink: 0;
+}
+
+/* ─── Title bar ──────────────────────────────────────────────────── */
+.titlebar {
+  height: 42px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.tb-logo-zone {
+  width: 204px;
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  gap: 8px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  height: 100%;
+}
+
+.logo-pill {
+  width: 30px; height: 30px;
+  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-size: 15px;
+  flex-shrink: 0;
+}
+
+.app-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.tb-page-title {
+  flex: 1;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tb-controls {
+  display: flex;
+  height: 100%;
+}
+
+.win-btn {
+  width: 46px; height: 100%;
+  border: none; background: transparent;
+  cursor: pointer; font-size: 12px;
+  color: var(--text-muted);
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.1s, color 0.1s;
+}
+.win-btn:hover { background: #F0F0F4; color: var(--text); }
+.win-btn.close:hover { background: #EF4444; color: white; }
+
+/* ─── Body Row ───────────────────────────────────────────────────── */
+.app-body {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
+/* ─── Icon strip ─────────────────────────────────────────────────── */
+.icon-strip {
+  width: 42px; flex-shrink: 0;
+  background: var(--bg-strip);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  align-items: center;
+  padding: 8px 0;
+  gap: 2px;
+}
+
+.strip-icon {
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px;
+  color: var(--text-muted);
+  transition: background 0.12s, color 0.12s;
+  position: relative;
+}
+.strip-icon:hover { background: var(--bg-nav-hover); color: var(--text-dim); }
+.strip-icon.active {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+.strip-spacer { flex: 1; }
+
+/* ─── Nav Column ─────────────────────────────────────────────────── */
+.nav-col {
+  width: 162px; flex-shrink: 0;
+  background: var(--bg-nav);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+}
+
+.nav-section {
+  padding: 14px 12px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  transition: background 0.1s;
+}
+.nav-item:hover { background: var(--bg-nav-hover); color: var(--text); }
+.nav-item.active {
+  background: var(--accent-light);
+  color: var(--accent);
+  border-left-color: var(--accent);
+  font-weight: 500;
+}
+
+.nav-dot {
+  width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
+}
+.dot-run  { background: var(--clr-run);  box-shadow: 0 0 4px var(--clr-run); }
+.dot-idle { background: var(--clr-idle); box-shadow: 0 0 4px var(--clr-idle); }
+.dot-stop { background: var(--clr-stop); }
+.dot-err  { background: var(--clr-err);  box-shadow: 0 0 4px var(--clr-err); }
+
+.nav-spacer { flex: 1; min-height: 12px; }
+
+.nav-add-zone {
+  border-top: 1px solid var(--border);
+  padding: 8px 10px;
+}
+.nav-add-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px dashed var(--border);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 12px;
+  transition: all 0.12s;
+}
+.nav-add-btn:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+/* ─── Main Content ───────────────────────────────────────────────── */
+.main-content {
+  flex: 1; overflow: hidden;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+}
+
+/* Pages - hidden by default */
+.page { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.page.active { display: flex; }
+
+/* ─── Page: 总览 ─────────────────────────────────────────────────── */
+.overview-body {
+  flex: 1; overflow: hidden;
+  display: flex; flex-direction: column;
+  padding: 14px;
+  gap: 12px;
+}
+
+.ov-top {
+  display: flex; gap: 12px;
+  flex: 1; overflow: hidden;
+  min-height: 0;
+}
+
+.ov-scheduler {
+  width: 270px; flex-shrink: 0;
+  display: flex; flex-direction: column;
+  gap: 10px;
+}
+
+.ov-log {
+  flex: 1; display: flex; flex-direction: column;
+  min-width: 0;
+}
+
+.ov-bottom {
+  flex-shrink: 0;
+}
+
+/* ─── Cards ──────────────────────────────────────────────────────── */
+.card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 14px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.card-title {
+  font-size: 12px; font-weight: 700;
+  color: var(--text);
+  display: flex; align-items: center; gap: 6px;
+}
+
+.card-title-bar {
+  width: 3px; height: 12px;
+  background: var(--accent); border-radius: 2px;
+}
+
+.card-body {
+  padding: 10px 14px;
+  flex: 1; overflow-y: auto;
+}
+
+.btn-primary {
+  padding: 4px 14px;
+  background: var(--accent);
+  color: white;
+  border: none; border-radius: 5px;
+  font-size: 12px; cursor: pointer;
+  transition: opacity 0.12s;
+}
+.btn-primary:hover { opacity: 0.88; }
+
+.btn-secondary {
+  padding: 3px 12px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 11px; cursor: pointer;
+  transition: all 0.12s;
+}
+.btn-secondary:hover { border-color: var(--accent-border); color: var(--accent); background: var(--accent-light); }
+
+.btn-danger {
+  padding: 5px 16px;
+  background: transparent;
+  color: var(--red);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 5px;
+  font-size: 12px; cursor: pointer;
+  transition: all 0.12s;
+}
+.btn-danger:hover { background: rgba(239,68,68,0.06); border-color: var(--red); }
+
+.toggle-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 3px 10px;
+  background: rgba(16,185,129,0.1);
+  color: var(--green);
+  border: 1px solid rgba(16,185,129,0.25);
+  border-radius: 5px;
+  font-size: 11px; cursor: pointer;
+}
+
+/* ─── Scheduler card content ─────────────────────────────────────── */
+.subsect-label {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-muted);
+  padding-bottom: 6px;
+}
+
+.running-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  background: rgba(245,158,11,0.07);
+  border-left: 2px solid var(--clr-run);
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 4px;
+}
+.run-pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--clr-run); flex-shrink: 0;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.running-name { font-size: 13px; color: var(--clr-run); font-weight: 500; }
+.running-emu  { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+
+.no-task {
+  font-size: 12px; color: var(--text-muted);
+  font-style: italic; padding: 4px 2px;
+}
+
+.queue-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; color: var(--text-dim);
+}
+.queue-item:last-child { border-bottom: none; }
+.queue-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-muted); flex-shrink: 0; }
+
+/* ─── Log card ───────────────────────────────────────────────────── */
+.log-stats {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.stat-chip {
+  display: flex; align-items: center; gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+}
+.stat-chip.green  { background: rgba(16,185,129,.1); color: #059669; }
+.stat-chip.amber  { background: rgba(245,158,11,.1);  color: #D97706; }
+.stat-chip.blue   { background: rgba(59,130,246,.1);  color: #2563EB; }
+.stat-chip.red    { background: rgba(239,68,68,.1);   color: #DC2626; }
+.stat-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+.log-box {
+  flex: 1; overflow-y: auto;
+  padding: 8px 16px;
+  font-family: "Cascadia Code","Consolas","Courier New",monospace;
+  font-size: 11.5px; line-height: 1.8;
+  color: #5A6070;
+}
+.log-line { white-space: pre-wrap; word-break: break-all; }
+.log-line.info   { color: #5A6070; }
+.log-line.ok     { color: #059669; }
+.log-line.warn   { color: #D97706; }
+.log-line.error  { color: #DC2626; }
+
+.log-ts { color: var(--text-muted); margin-right: 4px; }
+.log-tag {
+  display: inline-block;
+  padding: 0 5px; border-radius: 3px;
+  font-size: 10px; font-weight: 600;
+  margin-right: 5px;
+}
+.log-tag.main-tag { background: rgba(91,103,232,.12); color: var(--accent); }
+.log-tag.sub-tag  { background: rgba(16,185,129,.12);  color: #059669; }
+
+/* ─── Pending table ──────────────────────────────────────────────── */
+.pending-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.pending-table th {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 6px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+}
+.pending-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  vertical-align: middle;
+}
+.pending-table tr:last-child td { border-bottom: none; }
+.pending-table tr:hover td { background: #F7F8FB; }
+.pending-table .task-name { font-weight: 500; color: var(--text); }
+.pending-table .emu-tag {
+  display: inline-block; padding: 1px 7px;
+  border-radius: 10px; font-size: 11px;
+  background: var(--accent-light); color: var(--accent);
+}
+.pending-table .time-badge {
+  font-family: "Cascadia Code","Consolas",monospace;
+  font-size: 11px; color: var(--text-dim);
+}
+
+/* ─── Page: Emulator Detail ─────────────────────────────────────── */
+.emu-page-body {
+  flex: 1; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+.emu-header {
+  display: flex; align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-card);
+  flex-shrink: 0;
+  gap: 10px;
+}
+.emu-h-name { font-size: 16px; font-weight: 700; color: var(--text); }
+.emu-h-status {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px;
+}
+.emu-h-serial {
+  margin-left: auto;
+  font-size: 11px; color: var(--text-muted);
+  font-family: "Cascadia Code","Consolas",monospace;
+}
+.emu-h-del { margin-left: 12px; }
+
+.emu-content {
+  flex: 1; overflow: hidden;
+  display: flex; gap: 0;
+}
+
+.emu-left {
+  width: 260px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  padding: 14px;
+  gap: 14px;
+}
+
+.emu-right {
+  flex: 1; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.task-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.task-row:last-child { border-bottom: none; }
+.task-row-name { font-size: 13px; color: var(--text); font-weight: 500; }
+.task-row-time {
+  font-size: 11px; padding: 2px 8px;
+  background: rgba(91,103,232,.1);
+  color: var(--accent); border-radius: 10px;
+  font-family: "Cascadia Code","Consolas",monospace;
+}
+
+/* ─── Status badge ───────────────────────────────────────────────── */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px; font-weight: 500;
+}
+.status-badge.running { background: rgba(245,158,11,.1); color: #D97706; }
+.status-badge.idle    { background: rgba(16,185,129,.1);  color: #059669; }
+.status-badge.stopped { background: rgba(156,163,175,.15); color: var(--text-muted); }
+.status-badge.error   { background: rgba(239,68,68,.1);   color: #DC2626; }
+
+/* ─── Scrollbar ──────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #CBD0DB; }
+
+/* ─── Page transitions ───────────────────────────────────────────── */
+.main-content { position: relative; }
+.page { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity 0.15s; }
+.page.active { opacity: 1; pointer-events: all; position: relative; }
+
+/* ─── Status bar ─────────────────────────────────────────────────── */
+.statusbar {
+  height: 22px;
+  background: var(--bg-nav);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center;
+  padding: 0 14px;
+  gap: 14px;
+  flex-shrink: 0;
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+.sb-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--green); display: inline-block; margin-right: 3px;
+}
+.sb-sep { width: 1px; height: 12px; background: var(--border); }
+
+</style>
+</head>
+<body>
+
+<div class="app-window">
+  <!-- Amber top strip -->
+  <div class="top-strip"></div>
+
+  <!-- Title bar -->
+  <div class="titlebar">
+    <div class="tb-logo-zone">
+      <div class="logo-pill">🌾</div>
+      <span class="app-name">良田脚本</span>
+    </div>
+    <div class="tb-page-title" id="page-title">总览</div>
+    <div class="tb-controls">
+      <button class="win-btn" title="最小化">─</button>
+      <button class="win-btn" title="最大化">□</button>
+      <button class="win-btn close" title="关闭">✕</button>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="app-body">
+
+    <!-- Icon strip -->
+    <div class="icon-strip">
+      <div class="strip-icon active" onclick="switchNav('main')" id="strip-main" title="主页">⊞</div>
+      <div class="strip-icon" onclick="switchNav('run')" id="strip-run" title="运行">▷</div>
+      <div class="strip-spacer"></div>
+      <div class="strip-icon" onclick="showPage('page-add')" title="添加模拟器">＋</div>
+    </div>
+
+    <!-- Nav column -->
+    <div class="nav-col">
+      <div class="nav-item active" onclick="showPage('page-overview')" id="nav-overview">
+        总览
+      </div>
+
+      <div class="nav-section">模拟器</div>
+
+      <div class="nav-item" onclick="showEmu('主号')" id="nav-主号">
+        <span class="nav-dot dot-run"></span>
+        主号
+      </div>
+      <div class="nav-item" onclick="showEmu('小号')" id="nav-小号">
+        <span class="nav-dot dot-idle"></span>
+        小号
+      </div>
+
+      <div class="nav-section">工具</div>
+      <div class="nav-item" onclick="showPage('page-updater')" id="nav-updater">
+        更新器
+      </div>
+
+      <div class="nav-spacer"></div>
+      <div class="nav-add-zone">
+        <div class="nav-add-btn" onclick="showPage('page-add')">
+          <span>＋</span> 添加模拟器
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content">
+
+      <!-- ════ Page: 总览 ════ -->
+      <div class="page active" id="page-overview">
+        <div class="overview-body">
+
+          <!-- Top row: Scheduler + Log -->
+          <div class="ov-top">
+
+            <!-- Scheduler card -->
+            <div class="ov-scheduler">
+              <div class="card" style="flex:1;min-height:0;">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-title-bar"></span>
+                    调度器
+                  </div>
+                  <button class="btn-primary">启动</button>
+                </div>
+                <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+
+                  <div>
+                    <div class="subsect-label">运行中</div>
+                    <div class="running-item">
+                      <span class="run-pulse"></span>
+                      <span class="running-name">膜拜</span>
+                      <span class="running-emu">主号</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="subsect-label">队列中</div>
+                    <div class="no-task">无任务</div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <!-- Log card -->
+            <div class="ov-log" style="overflow:hidden;">
+              <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+                <div class="card-header">
+                  <div class="card-title">
+                    <span class="card-title-bar"></span>
+                    日志
+                  </div>
+                  <div class="toggle-btn">
+                    <span class="stat-dot" style="background:var(--green)"></span>
+                    自动滚动 开
+                  </div>
+                </div>
+                <div class="log-stats">
+                  <span class="stat-chip green"><span class="stat-dot"></span>2 运行中</span>
+                  <span class="stat-chip amber"><span class="stat-dot"></span>1 运行中任务</span>
+                  <span class="stat-chip blue"><span class="stat-dot"></span>4 已完成今日</span>
+                </div>
+                <div class="log-box" style="flex:1;overflow-y:auto;">
+                  <div class="log-line info"><span class="log-ts">13:22:01</span><span class="log-tag main-tag">主号</span>Scheduler started: ['粥棚', '膜拜', '建木营']</div>
+                  <div class="log-line ok"  ><span class="log-ts">13:22:04</span><span class="log-tag main-tag">主号</span>Run: 膜拜</div>
+                  <div class="log-line info"><span class="log-ts">13:22:05</span><span class="log-tag main-tag">主号</span>点击头像按钮</div>
+                  <div class="log-line info"><span class="log-ts">13:22:07</span><span class="log-tag main-tag">主号</span>进入跨服榜单</div>
+                  <div class="log-line info"><span class="log-ts">13:22:09</span><span class="log-tag main-tag">主号</span>膜拜 tab 1/6</div>
+                  <div class="log-line info"><span class="log-ts">13:22:13</span><span class="log-tag main-tag">主号</span>膜拜 tab 2/6</div>
+                  <div class="log-line info"><span class="log-ts">13:22:17</span><span class="log-tag main-tag">主号</span>膜拜 tab 3/6</div>
+                  <div class="log-line ok"  ><span class="log-ts">13:22:21</span><span class="log-tag main-tag">主号</span>膜拜完成 6/6</div>
+                  <div class="log-line info"><span class="log-ts">13:25:00</span><span class="log-tag sub-tag">小号</span>Scheduler started: ['粥棚', '建木营']</div>
+                  <div class="log-line info"><span class="log-ts">13:25:02</span><span class="log-tag sub-tag">小号</span>Idle, next: 粥棚 in 3600s</div>
+                  <div class="log-line info"><span class="log-ts">13:26:00</span><span class="log-tag main-tag">主号</span>Idle, next: 粥棚 in 7200s</div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /.ov-top -->
+
+          <!-- Bottom: Pending -->
+          <div class="ov-bottom">
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <span class="card-title-bar"></span>
+                  等待中
+                </div>
+                <span style="font-size:11px;color:var(--text-muted)">5 个任务待执行</span>
+              </div>
+              <div style="max-height:160px;overflow-y:auto;">
+                <table class="pending-table">
+                  <thead>
+                    <tr>
+                      <th>任务</th>
+                      <th>模拟器</th>
+                      <th>下次执行</th>
+                      <th>间隔</th>
+                      <th style="text-align:right">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="task-name">粥棚</td>
+                      <td><span class="emu-tag">主号</span></td>
+                      <td><span class="time-badge">明天 05:00</span></td>
+                      <td style="color:var(--text-muted)">3 小时</td>
+                      <td style="text-align:right"><button class="btn-secondary">设置</button></td>
+                    </tr>
+                    <tr>
+                      <td class="task-name">建木营</td>
+                      <td><span class="emu-tag">主号</span></td>
+                      <td><span class="time-badge">明天 05:00</span></td>
+                      <td style="color:var(--text-muted)">24 小时</td>
+                      <td style="text-align:right"><button class="btn-secondary">设置</button></td>
+                    </tr>
+                    <tr>
+                      <td class="task-name">膜拜</td>
+                      <td><span class="emu-tag">主号</span></td>
+                      <td><span class="time-badge">明天 13:22</span></td>
+                      <td style="color:var(--text-muted)">24 小时</td>
+                      <td style="text-align:right"><button class="btn-secondary">设置</button></td>
+                    </tr>
+                    <tr>
+                      <td class="task-name">粥棚</td>
+                      <td><span class="emu-tag">小号</span></td>
+                      <td><span class="time-badge">14:25</span></td>
+                      <td style="color:var(--text-muted)">3 小时</td>
+                      <td style="text-align:right"><button class="btn-secondary">设置</button></td>
+                    </tr>
+                    <tr>
+                      <td class="task-name">建木营</td>
+                      <td><span class="emu-tag">小号</span></td>
+                      <td><span class="time-badge">明天 05:00</span></td>
+                      <td style="color:var(--text-muted)">24 小时</td>
+                      <td style="text-align:right"><button class="btn-secondary">设置</button></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /#page-overview -->
+
+
+      <!-- ════ Page: Emulator Detail (主号) ════ -->
+      <div class="page" id="page-emu-主号">
+        <div class="emu-page-body">
+
+          <div class="emu-header">
+            <span class="nav-dot dot-run" style="width:9px;height:9px;"></span>
+            <span class="emu-h-name">主号</span>
+            <span class="status-badge running">
+              <span class="run-pulse"></span> 运行中
+            </span>
+            <span class="emu-h-serial">127.0.0.1:16512</span>
+            <div class="emu-h-del">
+              <button class="btn-danger">删除模拟器</button>
+            </div>
+          </div>
+
+          <div class="emu-content">
+
+            <!-- Left panel -->
+            <div class="emu-left">
+
+              <div>
+                <div class="subsect-label" style="padding-bottom:8px;">运行中</div>
+                <div class="running-item">
+                  <span class="run-pulse"></span>
+                  <span class="running-name">膜拜</span>
+                </div>
+              </div>
+
+              <div>
+                <div class="subsect-label" style="padding-bottom:4px;">等待中</div>
+                <div>
+                  <div class="task-row">
+                    <span class="task-row-name">粥棚</span>
+                    <span class="task-row-time">明天 05:00</span>
+                  </div>
+                  <div class="task-row">
+                    <span class="task-row-name">建木营</span>
+                    <span class="task-row-time">明天 05:00</span>
+                  </div>
+                  <div class="task-row">
+                    <span class="task-row-name">膜拜</span>
+                    <span class="task-row-time">明天 13:22</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right: log -->
+            <div class="emu-right">
+              <div class="card-header" style="border-bottom:1px solid var(--border);">
+                <div class="card-title">
+                  <span class="card-title-bar"></span>
+                  实时日志
+                </div>
+                <div class="toggle-btn">
+                  <span class="stat-dot" style="background:var(--green)"></span>
+                  自动滚动 开
+                </div>
+              </div>
+              <div class="log-box" style="flex:1;overflow-y:auto;">
+                <div class="log-line info"><span class="log-ts">13:22:01</span>Scheduler started: ['粥棚', '膜拜', '建木营']</div>
+                <div class="log-line ok"  ><span class="log-ts">13:22:04</span>Run: 膜拜</div>
+                <div class="log-line info"><span class="log-ts">13:22:05</span>点击头像按钮</div>
+                <div class="log-line info"><span class="log-ts">13:22:07</span>进入跨服榜单</div>
+                <div class="log-line info"><span class="log-ts">13:22:09</span>膜拜 tab 1/6 — 已找到 5 个头像</div>
+                <div class="log-line info"><span class="log-ts">13:22:11</span>膜拜 tab 2/6</div>
+                <div class="log-line info"><span class="log-ts">13:22:13</span>膜拜 tab 3/6</div>
+                <div class="log-line info"><span class="log-ts">13:22:15</span>膜拜 tab 4/6</div>
+                <div class="log-line info"><span class="log-ts">13:22:17</span>膜拜 tab 5/6</div>
+                <div class="log-line info"><span class="log-ts">13:22:19</span>膜拜 tab 6/6</div>
+                <div class="log-line ok"  ><span class="log-ts">13:22:21</span>膜拜完成</div>
+                <div class="log-line info"><span class="log-ts">13:22:22</span>Idle, next: 粥棚 in 7200s</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div><!-- /#page-emu-主号 -->
+
+
+      <!-- ════ Page: Emulator Detail (小号) ════ -->
+      <div class="page" id="page-emu-小号">
+        <div class="emu-page-body">
+
+          <div class="emu-header">
+            <span class="nav-dot dot-idle" style="width:9px;height:9px;"></span>
+            <span class="emu-h-name">小号</span>
+            <span class="status-badge idle">● 待机</span>
+            <span class="emu-h-serial">127.0.0.1:16544</span>
+            <div class="emu-h-del">
+              <button class="btn-danger">删除模拟器</button>
+            </div>
+          </div>
+
+          <div class="emu-content">
+            <div class="emu-left">
+              <div>
+                <div class="subsect-label" style="padding-bottom:8px;">运行中</div>
+                <div class="no-task" style="padding:4px 0;">无任务</div>
+              </div>
+              <div>
+                <div class="subsect-label" style="padding-bottom:4px;">等待中</div>
+                <div>
+                  <div class="task-row">
+                    <span class="task-row-name">粥棚</span>
+                    <span class="task-row-time">14:25</span>
+                  </div>
+                  <div class="task-row">
+                    <span class="task-row-name">建木营</span>
+                    <span class="task-row-time">明天 05:00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="emu-right">
+              <div class="card-header" style="border-bottom:1px solid var(--border);">
+                <div class="card-title"><span class="card-title-bar"></span>实时日志</div>
+                <div class="toggle-btn"><span class="stat-dot" style="background:var(--green)"></span>自动滚动 开</div>
+              </div>
+              <div class="log-box" style="flex:1;overflow-y:auto;">
+                <div class="log-line info"><span class="log-ts">13:25:00</span>Scheduler started: ['粥棚', '建木营']</div>
+                <div class="log-line info"><span class="log-ts">13:25:02</span>Idle, next: 粥棚 in 3600s</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /#page-emu-小号 -->
+
+
+      <!-- ════ Page: 更新器 ════ -->
+      <div class="page" id="page-updater">
+        <div style="padding:30px;display:flex;flex-direction:column;gap:16px;">
+          <div class="card-title" style="font-size:14px;">
+            <span class="card-title-bar" style="height:16px;"></span>
+            更新器
+          </div>
+          <div class="card" style="max-width:480px;">
+            <div class="card-header">
+              <div class="card-title">当前版本</div>
+            </div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:var(--text-muted);font-size:12px;">已安装版本</span>
+                <code style="font-size:12px;color:var(--text);">v0.4.2</code>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:var(--text-muted);font-size:12px;">最新版本</span>
+                <code style="font-size:12px;color:var(--green);">v0.4.2 ✓ 已是最新</code>
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:10px;">
+                <button class="btn-primary" style="width:100%;">检查更新</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════ Page: 添加模拟器 ════ -->
+      <div class="page" id="page-add">
+        <div style="padding:30px;display:flex;flex-direction:column;gap:16px;max-width:480px;">
+          <div class="card-title" style="font-size:14px;">
+            <span class="card-title-bar" style="height:16px;"></span>
+            添加模拟器
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">基本信息</div></div>
+            <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">名字</label>
+                <input type="text" placeholder="如：主号 / 小号"
+                  style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;color:var(--text);outline:none;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">ADB 端口</label>
+                <input type="text" value="127.0.0.1:16384"
+                  style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;font-family:'Cascadia Code','Consolas',monospace;color:var(--text);outline:none;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px;">MuMu 实例编号（留空则不自动启动）</label>
+                <input type="number" placeholder="0"
+                  style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:5px;font-size:13px;color:var(--text);outline:none;">
+              </div>
+              <div>
+                <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:6px;">启用的任务</label>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-dim);">
+                    <input type="checkbox" checked> 粥棚
+                    <span style="margin-left:auto;font-size:11px;color:var(--text-muted);">间隔 180 分钟</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-dim);">
+                    <input type="checkbox" checked> 膜拜
+                    <span style="margin-left:auto;font-size:11px;color:var(--text-muted);">间隔 1440 分钟</span>
+                  </label>
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text-dim);">
+                    <input type="checkbox"> 建木营
+                    <span style="margin-left:auto;font-size:11px;color:var(--text-muted);">间隔 1440 分钟</span>
+                  </label>
+                </div>
+              </div>
+              <div style="border-top:1px solid var(--border);padding-top:10px;display:flex;gap:8px;justify-content:flex-end;">
+                <button class="btn-secondary" onclick="showPage('page-overview')">取消</button>
+                <button class="btn-primary">确认添加</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.main-content -->
+  </div><!-- /.app-body -->
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span><span class="sb-dot"></span>已连接 2 个模拟器</span>
+    <div class="sb-sep"></div>
+    <span>1 个任务运行中</span>
+    <div class="sb-sep"></div>
+    <span>v0.4.2</span>
+    <span style="margin-left:auto;">ADB: 127.0.0.1:16512, 127.0.0.1:16544</span>
+  </div>
+
+</div><!-- /.app-window -->
+
+
+<script>
+const PAGE_TITLES = {
+  'page-overview':  '总览',
+  'page-emu-主号': '主号',
+  'page-emu-小号': '小号',
+  'page-updater':   '更新器',
+  'page-add':       '添加模拟器',
+};
+
+const NAV_IDS = {
+  'page-overview':  'nav-overview',
+  'page-emu-主号': 'nav-主号',
+  'page-emu-小号': 'nav-小号',
+  'page-updater':   'nav-updater',
+};
+
+function showPage(pageId) {
+  // hide all pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // show target
+  const target = document.getElementById(pageId);
+  if (target) target.classList.add('active');
+
+  // update title
+  document.getElementById('page-title').textContent = PAGE_TITLES[pageId] || pageId;
+
+  // update nav active state
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navId = NAV_IDS[pageId];
+  if (navId) document.getElementById(navId)?.classList.add('active');
+}
+
+function showEmu(name) {
+  showPage('page-emu-' + name);
+}
+
+function switchNav(which) {
+  document.querySelectorAll('.strip-icon').forEach(i => i.classList.remove('active'));
+  document.getElementById('strip-' + which)?.classList.add('active');
+}
+</script>
+
+</body>
+</html>

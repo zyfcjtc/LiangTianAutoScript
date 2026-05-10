@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>良田自动脚本</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --accent:       #5B67E8;
+  --accent-light: #EEF2FF;
+  --accent-bdr:   #C7D2FE;
+  --top-strip:    #F59E0B;
+  --bg:           #FFFFFF;
+  --bg-strip:     #F8F9FF;
+  --bg-nav:       #F2F3F8;
+  --bg-hover:     #E8EAEF;
+  --bg-card:      #FAFBFC;
+  --border:       #E4E6EE;
+  --text:         #1A1D23;
+  --text-dim:     #5A6070;
+  --text-muted:   #9CA3AF;
+  --green:        #10B981;
+  --amber:        #F59E0B;
+  --red:          #EF4444;
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--bg); }
+body { font-family: "Microsoft YaHei UI","Segoe UI",system-ui,sans-serif; font-size: 13px; color: var(--text); }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #CBD0DB; }
+
+/* ─── Layout ─────────────────────────────────────────────────────── */
+.app { display: flex; flex-direction: column; height: 100vh; }
+.top-strip { height: 3px; background: linear-gradient(90deg,#F59E0B,#FCD34D 50%,#F59E0B); flex-shrink: 0; }
+
+/* ─── Title bar ──────────────────────────────────────────────────── */
+.titlebar { height: 42px; display: flex; align-items: center; flex-shrink: 0; background: var(--bg); border-bottom: 1px solid var(--border); cursor: default; }
+.tb-logo-zone { width: 204px; display: flex; align-items: center; gap: 8px; padding-left: 10px; flex-shrink: 0; border-right: 1px solid var(--border); height: 100%; }
+.logo-pill { width: 29px; height: 29px; flex-shrink: 0; background: linear-gradient(135deg,#6366F1,#8B5CF6); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: white; }
+.app-name { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: -.01em; }
+.tb-page-title { flex: 1; text-align: center; font-size: 13px; font-weight: 600; color: var(--text); }
+.tb-controls { display: flex; height: 100%; }
+.win-btn { width: 46px; height: 100%; border: none; background: transparent; cursor: pointer; font-size: 13px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; transition: background .1s, color .1s; }
+.win-btn:hover { background: #F0F0F4; color: var(--text); }
+.win-btn.close:hover { background: #EF4444; color: #fff; }
+
+/* ─── Body row ───────────────────────────────────────────────────── */
+.body-row { flex: 1; display: flex; overflow: hidden; }
+
+/* ─── Narrow icon strip ──────────────────────────────────────────── */
+/* Each emulator = one ▷ slot; home = ⊞ at top; + = at bottom       */
+.icon-strip {
+  width: 42px; flex-shrink: 0; background: var(--bg-strip);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 6px 0 8px; gap: 2px;
+}
+
+/* Home icon */
+.si {
+  width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: var(--text-muted);
+  transition: background .12s, color .12s;
+}
+.si:hover  { background: var(--bg-hover); color: var(--text-dim); }
+.si.active { background: var(--accent-light); color: var(--accent); }
+
+/* Emulator slot in strip */
+.strip-emu {
+  width: 34px; padding: 5px 0; border-radius: 8px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; color: var(--text-muted);
+  transition: background .12s, color .12s;
+}
+.strip-emu:hover  { background: var(--bg-hover);    color: var(--text-dim); }
+.strip-emu.active { background: var(--accent-light); color: var(--accent); }
+.strip-emu-icon { font-size: 13px; line-height: 1; }
+.strip-emu-dot  { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+.si-spacer { flex: 1; }
+
+/* ─── Status dot colors ──────────────────────────────────────────── */
+.dot-idle  { background: #10B981; box-shadow: 0 0 4px #10B981; }
+.dot-run   { background: #F59E0B; box-shadow: 0 0 4px #F59E0B; }
+.dot-err   { background: #EF4444; box-shadow: 0 0 4px #EF4444; }
+.dot-start { background: var(--text-muted); }
+.dot-stop  { background: var(--text-muted); }
+
+/* ─── Nav column (changes based on strip selection) ──────────────── */
+.nav-col { width: 162px; flex-shrink: 0; background: var(--bg-nav); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
+.nav-section { padding: 14px 12px 4px; font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--text-muted); }
+.nav-item { display: flex; align-items: center; gap: 8px; padding: 7px 12px; cursor: pointer; border-left: 2px solid transparent; color: var(--text-dim); font-size: 13px; transition: background .1s; }
+.nav-item:hover  { background: var(--bg-hover); color: var(--text); }
+.nav-item.active { background: var(--accent-light); color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+.nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.nav-spacer { flex: 1; }
+.nav-del { color: var(--red) !important; }
+.nav-del:hover { background: rgba(239,68,68,.06) !important; }
+
+.nav-add-zone { border-top: 1px solid var(--border); padding: 8px 10px; flex-shrink: 0; }
+.nav-add-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px; border: 1px dashed var(--border); cursor: pointer; color: var(--text-muted); font-size: 12px; transition: all .12s; }
+.nav-add-btn:hover { border-color: var(--accent-bdr); background: var(--accent-light); color: var(--accent); }
+
+/* ─── Main content ───────────────────────────────────────────────── */
+.main { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+.page { display: none; flex: 1; flex-direction: column; overflow: hidden; position: absolute; inset: 0; }
+.page.active { display: flex; }
+
+/* ─── Buttons ────────────────────────────────────────────────────── */
+.btn-primary { padding: 4px 14px; background: var(--accent); color: #fff; border: none; border-radius: 5px; font-size: 12px; cursor: pointer; transition: opacity .12s; }
+.btn-primary:hover { opacity: .88; }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+.btn-secondary { padding: 3px 12px; background: transparent; color: var(--text-dim); border: 1px solid var(--border); border-radius: 5px; font-size: 11px; cursor: pointer; transition: all .12s; }
+.btn-secondary:hover { border-color: var(--accent-bdr); color: var(--accent); background: var(--accent-light); }
+.btn-danger { padding: 5px 16px; background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,.3); border-radius: 5px; font-size: 12px; cursor: pointer; transition: all .12s; }
+.btn-danger:hover { background: rgba(239,68,68,.06); border-color: var(--red); }
+
+/* ─── Cards ──────────────────────────────────────────────────────── */
+.card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+.card-hdr { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 14px; background: var(--bg-card); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.card-title { font-size: 12px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.card-bar   { width: 3px; height: 12px; background: var(--accent); border-radius: 2px; }
+
+/* ─── Shared log / task ──────────────────────────────────────────── */
+.subsect { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); padding-bottom: 6px; }
+.running-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin-bottom: 4px; background: rgba(245,158,11,.07); border-left: 2px solid #F59E0B; border-radius: 0 6px 6px 0; }
+.run-pulse { width: 6px; height: 6px; border-radius: 50%; background: #F59E0B; flex-shrink: 0; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+.run-name { font-size: 13px; color: #D97706; font-weight: 500; }
+.run-emu  { font-size: 11px; color: var(--text-muted); margin-left: auto; }
+.no-task  { font-size: 12px; color: var(--text-muted); font-style: italic; padding: 4px 2px; }
+
+.log-box { flex: 1; overflow-y: auto; padding: 8px 16px; font-family: "Cascadia Code","Consolas","Courier New",monospace; font-size: 11.5px; line-height: 1.8; color: var(--text-dim); }
+.log-line.warn  { color: #D97706; }
+.log-line.error { color: #DC2626; }
+
+.toggle-btn { display: flex; align-items: center; gap: 5px; padding: 3px 10px; background: rgba(16,185,129,.1); color: #059669; border: 1px solid rgba(16,185,129,.25); border-radius: 5px; font-size: 11px; cursor: pointer; }
+.chip { display: flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 12px; font-size: 11px; }
+.chip.green { background: rgba(16,185,129,.1); color: #059669; }
+.chip.amber { background: rgba(245,158,11,.1);  color: #D97706; }
+.chip.blue  { background: rgba(59,130,246,.1);  color: #2563EB; }
+.chip.red   { background: rgba(239,68,68,.1);   color: #DC2626; }
+.chip-dot   { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+/* ─── Overview (home / global) ───────────────────────────────────── */
+.ov-body   { flex: 1; overflow: hidden; display: flex; flex-direction: column; padding: 14px; gap: 12px; }
+.ov-top    { flex: 1; display: flex; gap: 12px; min-height: 0; }
+.ov-sched  { width: 268px; flex-shrink: 0; display: flex; flex-direction: column; }
+.ov-log    { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.ov-bottom { flex-shrink: 0; max-height: 195px; display: flex; flex-direction: column; }
+.log-stats { display: flex; gap: 8px; flex-wrap: wrap; padding: 8px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+
+.ptable { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ptable th { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-muted); padding: 6px 12px; text-align: left; border-bottom: 1px solid var(--border); background: var(--bg-card); }
+.ptable td { padding: 7px 12px; border-bottom: 1px solid var(--border); color: var(--text-dim); vertical-align: middle; }
+.ptable tr:last-child td { border-bottom: none; }
+.ptable tr:hover td { background: #F7F8FB; }
+.ptable .t-name { font-weight: 500; color: var(--text); }
+.etag   { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 11px; background: var(--accent-light); color: var(--accent); }
+.tbadge { font-family: "Cascadia Code","Consolas",monospace; font-size: 11px; color: var(--text-dim); }
+
+/* ─── Emulator overview page ─────────────────────────────────────── */
+.emu-ov-body { flex: 1; display: flex; overflow: hidden; }
+.emu-ov-left  { width: 268px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; padding: 14px; gap: 16px; }
+.emu-ov-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+.emu-hdr-strip { display: flex; align-items: center; gap: 8px; padding: 10px 14px 8px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.emu-hdr-name   { font-size: 14px; font-weight: 700; color: var(--text); }
+.emu-hdr-serial { font-size: 11px; color: var(--text-muted); font-family: "Cascadia Code","Consolas",monospace; margin-left: auto; }
+
+.status-badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+.status-badge.running { background: rgba(245,158,11,.1); color: #D97706; }
+.status-badge.idle    { background: rgba(16,185,129,.1);  color: #059669; }
+.status-badge.stopped { background: rgba(156,163,175,.15); color: var(--text-muted); }
+.status-badge.error   { background: rgba(239,68,68,.1);   color: #DC2626; }
+
+.task-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.task-row:last-child { border-bottom: none; }
+.task-row-name { font-size: 13px; color: var(--text); font-weight: 500; }
+.task-row-time { font-size: 11px; padding: 2px 8px; background: rgba(91,103,232,.1); color: var(--accent); border-radius: 10px; font-family: "Cascadia Code","Consolas",monospace; }
+
+/* ─── Task detail page ───────────────────────────────────────────── */
+.task-detail-body { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+.task-info-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+.task-info-row:last-child { border-bottom: none; }
+.task-info-label { color: var(--text-muted); }
+.task-info-val { font-family: "Cascadia Code","Consolas",monospace; color: var(--text); }
+
+/* ─── Add emulator form ──────────────────────────────────────────── */
+.form-wrap  { flex: 1; overflow-y: auto; padding: 20px 24px; }
+.form-card  { max-width: 480px; }
+.form-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.form-label { font-size: 11px; color: var(--text-muted); }
+.form-hint  { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+.form-input { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; color: var(--text); outline: none; background: var(--bg); transition: border-color .12s; }
+.form-input:focus { border-color: var(--accent-bdr); }
+.form-input.mono { font-family: "Cascadia Code","Consolas",monospace; }
+.check-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; font-size: 13px; color: var(--text-dim); }
+.check-row:hover { color: var(--text); }
+.interval-input { width: 70px; padding: 3px 7px; border: 1px solid var(--border); border-radius: 4px; font-size: 12px; color: var(--text); outline: none; text-align: center; }
+.check-right { margin-left: auto; display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+.form-section { font-size: 11px; font-weight: 700; color: var(--text-muted); letter-spacing: .05em; text-transform: uppercase; margin-bottom: 8px; }
+.form-error   { font-size: 12px; color: #DC2626; padding: 6px 0; display: none; }
+.form-actions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--border); margin-top: 4px; }
+
+/* ─── Status bar ─────────────────────────────────────────────────── */
+.statusbar { height: 22px; background: var(--bg-nav); border-top: 1px solid var(--border); display: flex; align-items: center; padding: 0 14px; gap: 14px; flex-shrink: 0; font-size: 10.5px; color: var(--text-muted); }
+.sb-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 3px; }
+.sb-sep { width: 1px; height: 12px; background: var(--border); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top-strip"></div>
+
+  <!-- Title bar -->
+  <div class="titlebar" id="titlebar">
+    <div class="tb-logo-zone">
+      <div class="logo-pill">🌾</div>
+      <span class="app-name">良田脚本</span>
+    </div>
+    <div class="tb-page-title" id="page-title">总览</div>
+    <div class="tb-controls">
+      <button class="win-btn" onclick="api.minimize()" title="最小化">─</button>
+      <button class="win-btn" onclick="api.toggle_maximize()" title="最大化">□</button>
+      <button class="win-btn close" onclick="api.close()" title="关闭">✕</button>
+    </div>
+  </div>
+
+  <div class="body-row">
+
+    <!-- Narrow icon strip: home + one slot per emulator + add -->
+    <div class="icon-strip">
+      <div class="si active" id="si-home" title="更新器" onclick="selectStrip('home')">⚙</div>
+      <!-- Emulator slots injected here by JS -->
+      <div id="strip-emu-slots"></div>
+      <div class="si-spacer"></div>
+      <div class="si" title="添加模拟器" onclick="showPage('add-emu')">＋</div>
+    </div>
+
+    <!-- Nav column: content changes based on strip selection -->
+    <div class="nav-col" id="nav-col"></div>
+
+    <!-- Main pages -->
+    <div class="main">
+
+      <!-- ══ Global overview ══ -->
+      <div class="page active" id="page-overview">
+        <div class="ov-body">
+          <div class="ov-top">
+            <div class="ov-sched">
+              <div class="card" style="flex:1">
+                <div class="card-hdr">
+                  <div class="card-title"><span class="card-bar"></span>调度器</div>
+                </div>
+                <div style="padding:12px 14px;flex:1;overflow-y:auto;">
+                  <div class="subsect">运行中</div>
+                  <div id="ov-running"><div class="no-task">无任务</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="ov-log">
+              <div class="card" style="flex:1;min-height:0;display:flex;flex-direction:column;">
+                <div class="card-hdr">
+                  <div class="card-title"><span class="card-bar"></span>日志</div>
+                  <button class="toggle-btn" onclick="toggleAutoScroll(this)">
+                    <span class="chip-dot" style="background:#059669"></span>自动滚动 开
+                  </button>
+                </div>
+                <div class="log-stats" id="ov-log-stats">
+                  <span class="chip green"><span class="chip-dot"></span>— 待机</span>
+                  <span class="chip amber"><span class="chip-dot"></span>— 运行中</span>
+                  <span class="chip blue"><span class="chip-dot"></span>— 模拟器</span>
+                </div>
+                <div class="log-box" id="ov-log-box"></div>
+              </div>
+            </div>
+          </div>
+          <div class="ov-bottom">
+            <div class="card" style="flex:1;display:flex;flex-direction:column;">
+              <div class="card-hdr">
+                <div class="card-title"><span class="card-bar"></span>等待中</div>
+                <span id="ov-pending-count" style="font-size:11px;color:var(--text-muted)"></span>
+              </div>
+              <div style="overflow-y:auto;flex:1;">
+                <table class="ptable">
+                  <thead><tr><th>任务</th><th>模拟器</th><th>下次执行</th><th>间隔</th><th style="text-align:right">操作</th></tr></thead>
+                  <tbody id="ov-pending-body"><tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px">暂无数据</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Emulator overview (running / pending / log) ══ -->
+      <div class="page" id="page-emu-overview">
+        <div class="emu-hdr-strip">
+          <span class="nav-dot" id="emu-ov-dot"></span>
+          <span class="emu-hdr-name" id="emu-ov-name"></span>
+          <span class="status-badge idle" id="emu-ov-badge">待机</span>
+          <span class="emu-hdr-serial" id="emu-ov-serial"></span>
+        </div>
+        <div class="emu-ov-body">
+          <div class="emu-ov-left">
+            <div>
+              <div class="subsect">运行中</div>
+              <div id="emu-ov-running"><div class="no-task">无任务</div></div>
+            </div>
+            <div>
+              <div class="subsect">等待中</div>
+              <div id="emu-ov-pending"><div class="no-task">无任务</div></div>
+            </div>
+          </div>
+          <div class="emu-ov-right">
+            <div class="card-hdr" style="border-bottom:1px solid var(--border);">
+              <div class="card-title"><span class="card-bar"></span>实时日志</div>
+              <button class="toggle-btn" onclick="toggleAutoScroll(this)">
+                <span class="chip-dot" style="background:#059669"></span>自动滚动 开
+              </button>
+            </div>
+            <div class="log-box" id="emu-log-box"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Task detail ══ -->
+      <div class="page" id="page-task-detail">
+        <div class="task-detail-body">
+          <div style="font-size:14px;font-weight:700;color:var(--text)" id="task-detail-title"></div>
+          <div class="card" style="max-width:440px;">
+            <div class="card-hdr"><div class="card-title"><span class="card-bar"></span>任务信息</div></div>
+            <div style="padding:4px 14px;">
+              <div class="task-info-row"><span class="task-info-label">模拟器</span><code class="task-info-val" id="td-emu"></code></div>
+              <div class="task-info-row"><span class="task-info-label">状态</span><span id="td-status"></span></div>
+              <div class="task-info-row"><span class="task-info-label">下次执行</span><code class="task-info-val" id="td-next"></code></div>
+              <div class="task-info-row"><span class="task-info-label">执行间隔</span><code class="task-info-val" id="td-interval"></code></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Add emulator ══ -->
+      <div class="page" id="page-add-emu">
+        <div class="form-wrap">
+          <div class="form-card">
+            <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:18px;">添加模拟器</div>
+            <div class="card">
+              <div class="card-hdr"><div class="card-title"><span class="card-bar"></span>基本信息</div></div>
+              <div style="padding:14px;">
+                <div class="form-field">
+                  <label class="form-label">名字</label>
+                  <input id="add-name" class="form-input" type="text" placeholder="如：主号 / 小号">
+                </div>
+                <div class="form-field">
+                  <label class="form-label">ADB 地址</label>
+                  <input id="add-serial" class="form-input mono" type="text" value="127.0.0.1:16384">
+                </div>
+                <div class="form-field">
+                  <label class="form-label">MuMu 实例编号</label>
+                  <input id="add-mumu" class="form-input" type="number" placeholder="留空则不自动启动">
+                  <span class="form-hint">实例 0 → 端口 16384，实例 1 → 16416，以此类推</span>
+                </div>
+                <div class="form-field">
+                  <label class="form-label">游戏包名</label>
+                  <input id="add-package" class="form-input mono" type="text" placeholder="留空则不自动启动游戏">
+                </div>
+                <div class="form-field">
+                  <label class="form-label">启动选项</label>
+                  <label class="check-row"><input id="add-auto-login" type="checkbox"> 自动启动游戏并登录</label>
+                  <label class="check-row"><input id="add-run-once"   type="checkbox"> 跑完所有任务后自动关闭</label>
+                </div>
+                <div class="form-field">
+                  <div class="form-section" style="margin-bottom:6px;">启用的任务</div>
+                  <div id="add-tasks-list"></div>
+                </div>
+                <div class="form-error" id="add-error"></div>
+                <div class="form-actions">
+                  <button class="btn-secondary" onclick="selectStrip('home')">取消</button>
+                  <button class="btn-primary" id="add-submit" onclick="submitAddForm()">确认添加</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Updater ══ -->
+      <div class="page" id="page-updater">
+        <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
+          <div style="font-size:14px;font-weight:700;color:var(--text);">更新器</div>
+          <div class="card" style="max-width:440px;">
+            <div class="card-hdr"><div class="card-title"><span class="card-bar"></span>版本信息</div></div>
+            <div style="padding:4px 14px;">
+              <div class="task-info-row"><span class="task-info-label">当前分支</span><code class="task-info-val" id="upd-branch">—</code></div>
+              <div class="task-info-row"><span class="task-info-label">最后更新</span><code class="task-info-val" id="upd-date">—</code></div>
+            </div>
+            <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;">
+              <button class="btn-primary" id="upd-btn" style="width:100%" onclick="checkUpdate()">检查更新</button>
+              <div id="upd-result" style="font-size:11.5px;font-family:'Cascadia Code','Consolas',monospace;color:var(--text-dim);white-space:pre-wrap;display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;max-height:120px;overflow-y:auto;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /.main -->
+  </div><!-- /.body-row -->
+
+  <!-- Status bar -->
+  <div class="statusbar">
+    <span id="sb-emus"><span class="sb-dot"></span>— 模拟器</span>
+    <div class="sb-sep"></div>
+    <span id="sb-tasks">— 运行中</span>
+    <div class="sb-sep"></div>
+    <span id="sb-ver">—</span>
+    <span style="margin-left:auto" id="sb-serials"></span>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────────
+let api;
+const S = {
+  strip:   'home',   // 'home' | emu name (which strip icon is active)
+  navPage: 'overview', // which nav item within that strip context is active
+  task:    null,       // task name when on task-detail page
+  emus:    [],
+  logIds:  {},         // { '__all__': lastId, emuName: lastId }
+  autoScroll: true,
+  taskReg: [],
+  delConfirm: false,
+  delTimer: null,
+};
+
+const DOT_CLS = { starting:'dot-start', idle:'dot-idle', running:'dot-run', stopping:'dot-start', stopped:'dot-stop', error:'dot-err' };
+const STATUS_LABEL = { starting:'启动中', idle:'待机', running:'运行中', stopping:'停止中', stopped:'已停止', error:'错误' };
+const STATUS_BADGE = { idle:'idle', running:'running', stopped:'stopped', error:'error', starting:'stopped', stopping:'stopped' };
+
+// ── Init ───────────────────────────────────────────────────────────────────────
+window.addEventListener('pywebviewready', async () => {
+  api = window.pywebview.api;
+  const [ver, reg, curInfo] = await Promise.all([api.get_version(), api.get_task_registry(), api.get_current_info()]);
+  S.taskReg = reg;
+  document.getElementById('sb-ver').textContent    = 'v' + ver;
+  document.getElementById('upd-branch').textContent = curInfo.version;
+  document.getElementById('upd-date').textContent   = curInfo.last_update;
+  buildAddForm();
+  await poll();
+  setInterval(poll, 1500);
+  setInterval(pollLogs, 800);
+});
+
+// ── Strip selection ────────────────────────────────────────────────────────────
+// Clicking the home icon or an emulator icon in the narrow strip changes context.
+function selectStrip(key) {
+  S.strip = key;
+  S.navPage = key === 'home' ? 'updater' : 'emu-overview';
+  S.task = null;
+  S.delConfirm = false; clearTimeout(S.delTimer);
+
+  // Update strip icon highlight
+  document.getElementById('si-home').classList.toggle('active', key === 'home');
+  document.querySelectorAll('.strip-emu').forEach(el => {
+    el.classList.toggle('active', el.dataset.name === key);
+  });
+
+  renderNav();
+  showPageForState();
+}
+
+// ── Nav item click (within the selected strip context) ─────────────────────────
+function selectNavPage(navPage, taskName) {
+  S.navPage = navPage;
+  S.task    = taskName || null;
+  S.delConfirm = false; clearTimeout(S.delTimer);
+  renderNav();
+  showPageForState();
+}
+
+// ── Which main page to show given current state ────────────────────────────────
+function showPageForState() {
+  let pageId;
+  if (S.strip === 'home') {
+    pageId = 'updater';
+  } else if (S.navPage === 'emu-overview') {
+    pageId = 'emu-overview';
+  } else if (S.navPage === 'task-detail') {
+    pageId = 'task-detail';
+    renderTaskDetail();
+  } else {
+    pageId = S.navPage;
+  }
+
+  // If navigating to a different log context, clear and reload
+  const newLogKey = pageId === 'overview' ? '__all__'
+                  : pageId === 'emu-overview' ? S.strip
+                  : null;
+  const prevLogKey = currentLogKey();
+
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageId)?.classList.add('active');
+
+  const titles = {
+    'updater': '更新器',
+    'emu-overview': S.strip,
+    'task-detail': S.task,
+    'add-emu': '添加模拟器',
+  };
+  document.getElementById('page-title').textContent = titles[pageId] || pageId;
+
+  if (newLogKey && newLogKey !== prevLogKey) {
+    const boxId = pageId === 'overview' ? 'ov-log-box' : 'emu-log-box';
+    const box = document.getElementById(boxId);
+    if (box) box.innerHTML = '';
+    S.logIds[newLogKey] = -1;
+    pollLogs();
+  }
+
+  if (pageId === 'emu-overview') renderEmuOverview();
+}
+
+function showPage(pageId) {
+  // For pages outside the home/emu flow (add-emu, updater)
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageId)?.classList.add('active');
+  const titles = { 'add-emu':'添加模拟器', 'updater':'更新器' };
+  document.getElementById('page-title').textContent = titles[pageId] || pageId;
+  renderNav();
+}
+
+function currentLogKey() {
+  const active = document.querySelector('.page.active');
+  if (!active) return null;
+  if (active.id === 'page-overview')     return '__all__';
+  if (active.id === 'page-emu-overview') return S.strip;
+  return null;
+}
+
+// ── Polling ────────────────────────────────────────────────────────────────────
+async function poll() {
+  try { S.emus = await api.get_emulators(); } catch (_) { return; }
+  renderStrip();
+  renderNav();
+  renderStatusBar();
+  const active = document.querySelector('.page.active');
+  if (!active) return;
+  if (active.id === 'page-overview')     renderOverview();
+  if (active.id === 'page-emu-overview') renderEmuOverview();
+  if (active.id === 'page-task-detail')  renderTaskDetail();
+}
+
+async function pollLogs() {
+  const logKey = currentLogKey();
+  if (!logKey) return;
+  const boxId = logKey === '__all__' ? 'ov-log-box' : 'emu-log-box';
+  const box   = document.getElementById(boxId);
+  if (!box) return;
+  const since = S.logIds[logKey] ?? -1;
+  let entries;
+  try { entries = await api.get_logs(logKey, since); } catch (_) { return; }
+  if (!entries.length) return;
+  S.logIds[logKey] = entries[entries.length - 1].id;
+  const wasBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 20;
+  const toAdd = since === -1 ? entries.slice(-200) : entries;
+  toAdd.forEach(e => {
+    const d = document.createElement('div');
+    d.className = 'log-line ' + levelClass(e.level);
+    d.textContent = e.text;
+    box.appendChild(d);
+    while (box.children.length > 500) box.removeChild(box.firstChild);
+  });
+  if (S.autoScroll && (wasBottom || since === -1)) box.scrollTop = box.scrollHeight;
+}
+
+// ── Render: narrow strip emulator slots ───────────────────────────────────────
+function renderStrip() {
+  const zone = document.getElementById('strip-emu-slots');
+  zone.innerHTML = S.emus.map(e => `
+    <div class="strip-emu ${S.strip === e.name ? 'active' : ''}"
+         data-name="${esc(e.name)}" title="${esc(e.name)}"
+         onclick="selectStrip('${esc(e.name)}')">
+      <span class="strip-emu-icon">▷</span>
+      <span class="strip-emu-dot ${DOT_CLS[e.status] || 'dot-stop'}"></span>
+    </div>
+  `).join('');
+}
+
+// ── Render: nav column ────────────────────────────────────────────────────────
+function renderNav() {
+  const col = document.getElementById('nav-col');
+  if (S.strip === 'home') {
+    col.innerHTML = `
+      <div class="nav-item active">更新器</div>
+      <div class="nav-spacer"></div>
+      <div class="nav-add-zone"><div class="nav-add-btn" onclick="showPage('add-emu')">＋ 添加模拟器</div></div>
+    `;
+  } else {
+    const emu = S.emus.find(e => e.name === S.strip) || { name: S.strip, tasks: [] };
+    const taskItems = emu.tasks.map(t => `
+      <div class="nav-item ${S.navPage === 'task-detail' && S.task === t.name ? 'active' : ''}"
+           onclick="selectNavPage('task-detail', '${esc(t.name)}')">
+        ${esc(t.name)}
+      </div>
+    `).join('');
+    col.innerHTML = `
+      <div class="nav-item ${S.navPage === 'emu-overview' ? 'active' : ''}" onclick="selectNavPage('emu-overview')">总览</div>
+      <div class="nav-section">任务</div>
+      ${taskItems || '<div class="no-task" style="padding:4px 14px">无任务</div>'}
+      <div class="nav-spacer"></div>
+      <div class="nav-item nav-del" onclick="deleteEmu()">删除模拟器</div>
+    `;
+  }
+}
+
+// ── Render: status bar ────────────────────────────────────────────────────────
+function renderStatusBar() {
+  const running = S.emus.filter(e => e.status === 'running').length;
+  document.getElementById('sb-emus').innerHTML  = `<span class="sb-dot"></span>${S.emus.length} 个模拟器`;
+  document.getElementById('sb-tasks').textContent = `${running} 个运行中`;
+  document.getElementById('sb-serials').textContent = S.emus.map(e => e.serial).join('  ');
+}
+
+// ── Render: global overview ───────────────────────────────────────────────────
+function renderOverview() {
+  const runHtml = S.emus.filter(e => e.current_task).map(e => `
+    <div class="running-item">
+      <span class="run-pulse"></span>
+      <span class="run-name">${esc(e.current_task)}</span>
+      <span class="run-emu">${esc(e.name)}</span>
+    </div>
+  `).join('') || '<div class="no-task">无任务</div>';
+  document.getElementById('ov-running').innerHTML = runHtml;
+
+  const idle    = S.emus.filter(e => e.status === 'idle').length;
+  const running = S.emus.filter(e => e.status === 'running').length;
+  const errors  = S.emus.filter(e => e.status === 'error').length;
+  let stats = `
+    <span class="chip green"><span class="chip-dot"></span>${idle} 待机</span>
+    <span class="chip amber"><span class="chip-dot"></span>${running} 运行中</span>
+    <span class="chip blue"><span class="chip-dot"></span>${S.emus.length} 模拟器</span>
+  `;
+  if (errors) stats += `<span class="chip red"><span class="chip-dot"></span>${errors} 错误</span>`;
+  document.getElementById('ov-log-stats').innerHTML = stats;
+
+  const rows = [];
+  for (const emu of S.emus) {
+    for (const t of emu.tasks) {
+      if (t.name === emu.current_task) continue;
+      const hrs = t.interval_minutes >= 60 ? (t.interval_minutes/60|0) + ' 小时' : t.interval_minutes + ' 分钟';
+      rows.push(`<tr>
+        <td class="t-name">${esc(t.name)}</td>
+        <td><span class="etag">${esc(emu.name)}</span></td>
+        <td><span class="tbadge">${fmtTime(t.next_run)}</span></td>
+        <td style="color:var(--text-muted)">${hrs}</td>
+        <td style="text-align:right"><button class="btn-secondary" onclick="selectStrip('${esc(emu.name)}')">查看</button></td>
+      </tr>`);
+    }
+  }
+  document.getElementById('ov-pending-body').innerHTML =
+    rows.length ? rows.join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px">暂无待执行任务</td></tr>';
+  document.getElementById('ov-pending-count').textContent = rows.length ? rows.length + ' 个' : '';
+}
+
+// ── Render: emulator overview ─────────────────────────────────────────────────
+function renderEmuOverview() {
+  const emu = S.emus.find(e => e.name === S.strip);
+  if (!emu) return;
+  document.getElementById('emu-ov-name').textContent   = emu.name;
+  document.getElementById('emu-ov-serial').textContent = emu.serial;
+  document.getElementById('page-title').textContent    = emu.name;
+  const dot = document.getElementById('emu-ov-dot');
+  dot.className = 'nav-dot ' + (DOT_CLS[emu.status] || 'dot-stop');
+  const badge = document.getElementById('emu-ov-badge');
+  badge.className   = 'status-badge ' + (STATUS_BADGE[emu.status] || 'stopped');
+  badge.textContent = STATUS_LABEL[emu.status] || emu.status;
+  document.getElementById('emu-ov-running').innerHTML = emu.current_task
+    ? `<div class="running-item"><span class="run-pulse"></span><span class="run-name">${esc(emu.current_task)}</span></div>`
+    : '<div class="no-task">无任务</div>';
+  document.getElementById('emu-ov-pending').innerHTML =
+    emu.tasks.filter(t => t.name !== emu.current_task).map(t => `
+      <div class="task-row">
+        <span class="task-row-name">${esc(t.name)}</span>
+        <span class="task-row-time">${fmtTime(t.next_run)}</span>
+      </div>
+    `).join('') || '<div class="no-task">无任务</div>';
+}
+
+// ── Render: task detail ───────────────────────────────────────────────────────
+function renderTaskDetail() {
+  const emu  = S.emus.find(e => e.name === S.strip);
+  const task = emu?.tasks.find(t => t.name === S.task);
+  if (!task) return;
+  document.getElementById('task-detail-title').textContent = S.task;
+  document.getElementById('td-emu').textContent      = S.strip;
+  document.getElementById('td-next').textContent     = fmtTime(task.next_run);
+  document.getElementById('td-interval').textContent = task.interval_minutes + ' 分钟';
+  const isRunning = emu.current_task === S.task;
+  document.getElementById('td-status').innerHTML = isRunning
+    ? '<span class="status-badge running"><span class="run-pulse"></span>运行中</span>'
+    : `<span class="status-badge idle">${fmtTime(task.next_run) === '—' ? '待机' : '等待中'}</span>`;
+}
+
+// ── Add emulator form ─────────────────────────────────────────────────────────
+function buildAddForm() {
+  document.getElementById('add-tasks-list').innerHTML = S.taskReg.map(t => `
+    <label class="check-row">
+      <input type="checkbox" class="task-cb" data-task="${esc(t.name)}">
+      <span>${esc(t.name)}</span>
+      <span class="check-right">间隔 <input type="number" class="interval-input" value="${t.default_interval}" data-task="${esc(t.name)}" min="1"> 分钟</span>
+    </label>
+  `).join('');
+}
+
+async function submitAddForm() {
+  const name   = document.getElementById('add-name').value.trim();
+  const serial = document.getElementById('add-serial').value.trim();
+  const mumu   = document.getElementById('add-mumu').value.trim();
+  const pkg    = document.getElementById('add-package').value.trim();
+  const auto   = document.getElementById('add-auto-login').checked;
+  const once   = document.getElementById('add-run-once').checked;
+  const errEl  = document.getElementById('add-error');
+  errEl.style.display = 'none';
+  if (!name)   { errEl.textContent = '名字不能为空'; errEl.style.display = 'block'; return; }
+  if (!serial) { errEl.textContent = '端口不能为空'; errEl.style.display = 'block'; return; }
+  const tasks = [];
+  document.querySelectorAll('.task-cb:checked').forEach(cb => {
+    const n = cb.dataset.task;
+    const iv = document.querySelector(`.interval-input[data-task="${n}"]`);
+    tasks.push({ name: n, interval: parseInt(iv?.value || 60) });
+  });
+  const btn = document.getElementById('add-submit');
+  btn.disabled = true; btn.textContent = '添加中…';
+  const result = await api.add_emulator({ name, serial, mumu_instance: mumu || null, package: pkg || null, auto_login: auto, run_once: once, tasks });
+  btn.disabled = false; btn.textContent = '确认添加';
+  if (result.ok) { selectStrip('home'); }
+  else { errEl.textContent = result.error || '添加失败'; errEl.style.display = 'block'; }
+}
+
+// ── Delete emulator ───────────────────────────────────────────────────────────
+async function deleteEmu() {
+  const navDel = document.querySelector('.nav-del');
+  if (!S.delConfirm) {
+    S.delConfirm = true;
+    if (navDel) { navDel.textContent = '确认删除？'; navDel.style.color = 'var(--red)'; }
+    S.delTimer = setTimeout(() => {
+      S.delConfirm = false;
+      if (navDel) navDel.textContent = '删除模拟器';
+    }, 3000);
+    return;
+  }
+  clearTimeout(S.delTimer);
+  const name = S.strip;
+  await api.delete_emulator(name);
+  selectStrip('home');
+}
+
+// ── Update checker ────────────────────────────────────────────────────────────
+async function checkUpdate() {
+  const btn = document.getElementById('upd-btn');
+  const res = document.getElementById('upd-result');
+  btn.disabled = true; btn.textContent = '检查中…';
+  res.style.display = 'none';
+  const r = await api.check_update();
+  btn.disabled = false; btn.textContent = '检查更新';
+  if (!r.ok) {
+    res.innerHTML = `<span style="color:#DC2626">检查失败：${esc(r.error)}</span>`;
+    res.style.display = 'block';
+    return;
+  }
+  if (r.has_update) {
+    res.innerHTML =
+      `<span style="color:#059669">发现新版本 ${esc(r.latest)}（${esc(r.date)}）</span>\n` +
+      (r.body ? esc(r.body) + '\n' : '') +
+      `\n<a href="${esc(r.url)}" onclick="api.open_url && api.open_url('${esc(r.url)}'); return false;" ` +
+      `style="color:var(--accent);text-decoration:underline;cursor:pointer;">前往下载页面 →</a>`;
+  } else {
+    res.innerHTML = `<span style="color:#059669">✓ 已是最新版本（${esc(r.latest)}）</span>`;
+  }
+  res.style.display = 'block';
+}
+
+// ── Auto-scroll toggle ────────────────────────────────────────────────────────
+function toggleAutoScroll(btn) {
+  S.autoScroll = !S.autoScroll;
+  btn.innerHTML = S.autoScroll
+    ? '<span class="chip-dot" style="background:#059669"></span>自动滚动 开'
+    : '<span class="chip-dot" style="background:var(--text-muted)"></span>自动滚动 关';
+}
+
+// ── Title bar drag ────────────────────────────────────────────────────────────
+(function() {
+  const bar = document.getElementById('titlebar');
+  let dragging = false, prevX, prevY, pendingDx = 0, pendingDy = 0, rafPending = false;
+  function flushDrag() {
+    if (!pendingDx && !pendingDy) { rafPending = false; return; }
+    const dx = pendingDx, dy = pendingDy; pendingDx = pendingDy = 0;
+    if (api) api.drag_delta(dx, dy).finally(() => {
+      rafPending = false;
+      if (pendingDx || pendingDy) { rafPending = true; requestAnimationFrame(flushDrag); }
+    });
+    else rafPending = false;
+  }
+  bar.addEventListener('mousedown', e => {
+    if (e.target.closest('.tb-controls,.win-btn')) return;
+    dragging = true; prevX = e.screenX; prevY = e.screenY; e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    pendingDx += e.screenX - prevX; pendingDy += e.screenY - prevY;
+    prevX = e.screenX; prevY = e.screenY;
+    if (!rafPending) { rafPending = true; requestAnimationFrame(flushDrag); }
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+})();
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function levelClass(l) {
+  if (l === 'ERROR' || l === 'CRITICAL') return 'error';
+  if (l === 'WARNING') return 'warn';
+  return '';
+}
+
+function fmtTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso), now = new Date();
+  const hm = d.toLocaleTimeString('zh-CN', { hour:'2-digit', minute:'2-digit', hour12: false });
+  const dMid = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const tMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const xMid = new Date(tMid.getTime() + 86400000);
+  if (dMid.getTime() === tMid.getTime()) return hm;
+  if (dMid.getTime() === xMid.getTime()) return '明天 ' + hm;
+  return (d.getMonth()+1) + '-' + d.getDate() + ' ' + hm;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
