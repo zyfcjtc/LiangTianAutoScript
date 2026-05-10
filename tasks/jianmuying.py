@@ -9,6 +9,7 @@ PATHFIND = Button(
     search_area=(635, 643, 717, 735),
 )
 
+PATHFIND_SLEEP = 0.8
 ENTER_SLEEP = 1.5
 PRE_SWIPE_SLEEP = 2.0
 SWIPE_SLEEP = 0.8
@@ -36,7 +37,7 @@ class JianmuyingTask(Task):
     def run(self, ui: UI) -> None:
         if not ui.click(PATHFIND):
             return
-        ui.device.sleep(0.8)
+        ui.device.sleep(PATHFIND_SLEEP)
 
         if not ui.click_text("建木营", search_area=(200, 450, 570, 850)):
             return
@@ -54,7 +55,7 @@ class JianmuyingTask(Task):
                 ui.device.sleep(SWIPE_SLEEP)
 
             for pt in pts:
-                logger.info(f"建木营 pass{i}: 点击 @ {pt}")
+                logger.debug(f"建木营 pass{i}: 点击 @ {pt}")
                 ui.device.sleep(PRE_CLICK_SLEEP)
                 ui.device.click(*pt)
                 total += 1

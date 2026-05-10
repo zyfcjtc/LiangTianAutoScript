@@ -12,7 +12,7 @@
 - ✅ **多模拟器并行**：每个模拟器独立线程 + 独立日志页签
 - ✅ **Web 监控面板**：实时状态、按模拟器分页签查看日志、UI 加/删模拟器
 - ✅ **自定义任务间隔**：添加模拟器时可为每个任务单独设置执行间隔
-- ✅ **防机检测**：点击位置 ±4px 抖动、sleep ±15% 抖动
+- ✅ **防机检测**：点击位置 ±4px 抖动、sleep ±30% 抖动
 
 ## 规划中
 
@@ -39,18 +39,21 @@ netstat -ano | findstr "1638 1641 1644 1647 1651 1654 1657 1660"
 
 1. 从 [Releases](../../releases) 下载最新版 `LiangtianAutoScript-vX.X.X.zip`
 2. 解压到任意位置
-3. 双击 `LiangtianAutoScript.exe`
-4. 黑窗口出现后等 10-20 秒（首次解压依赖会慢），浏览器自动开 `http://127.0.0.1:8080`
-5. UI 里点 **+ 添加模拟器**，填名字 + 端口、勾选任务 → 确认
+3. 双击 `LiangtianAutoScript.exe`，桌面客户端直接弹出（首次启动稍慢，等待约 10 秒）
+4. 点 **+** 添加模拟器，填名字 + 端口、勾选任务 → 确认
 
 提示：
 
-- **黑窗口不能关**，关了脚本就停。浏览器关了不影响后台运行
 - UI 里加的模拟器**重启后会丢**，要永久保留请编辑 `config.yaml`
+- 点左上角主页图标可查看当前版本并检查更新
+
+### 热更新（小版本）
+
+无需重新下载完整包：主页 → **检查更新** → 发现新版本后点 **下载补丁** 即可自动更新任务脚本。
 
 ### 停止
 
-关掉黑色 cmd 窗口即可。
+点击右上角关闭按钮即可。
 
 ---
 
@@ -70,15 +73,16 @@ python main.py
 ## 开发者：打包 .exe
 
 ```cmd
-.venv\Scripts\activate.bat
-pip install pyinstaller
-pyinstaller --onefile --name LiangtianAutoScript --add-data "assets;assets" --collect-all pywebio --collect-all adbutils --collect-all rapidocr_onnxruntime main.py
-copy config.yaml dist\
+build.bat
 ```
 
-输出 `dist/LiangtianAutoScript.exe` (~95 MB，含 OCR 模型)。
+输出 `dist/LiangtianAutoScript.exe`、完整包 `LiangtianAutoScript-vX.X.X.zip`、热更新补丁 `patch-vX.X.X.zip`。
 
-PowerShell 用户也可以跑 `build.ps1`（需要先放行执行策略：`Set-ExecutionPolicy RemoteSigned -Scope CurrentUser`）。
+只更新任务脚本/素材时无需重新打包，直接运行：
+
+```cmd
+patch.bat
+```
 
 ## 加新任务
 
@@ -108,7 +112,8 @@ config.yaml   启动时加载的模拟器配置
 - [adbutils](https://github.com/openatx/adbutils) — 设备通信
 - [opencv-python](https://github.com/opencv/opencv-python) — 模板匹配
 - [rapidocr-onnxruntime](https://github.com/RapidAI/RapidOCR) — 中文 OCR（识别文字按钮）
-- [PyWebIO](https://github.com/pywebio/PyWebIO) — 监控 UI
+- [pywebview](https://pywebview.flowrl.com/) — 桌面客户端（Edge WebView2）
+- [PyWebIO](https://github.com/pywebio/PyWebIO) — Web 监控 UI（`--webui` 模式）
 - [PyInstaller](https://pyinstaller.org/) — 打包
 
 ## 致谢 / 关于 Alas
