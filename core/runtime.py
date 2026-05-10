@@ -61,16 +61,17 @@ def add_emulator(
     if package and auto_login:
         launcher.ensure_game_running(serial, package)
 
-    # 建立设备连接并注册调度器（持锁）
+    # 建立设备连接（耗时，锁外执行）
+    try:
+        device = Device(serial)
+    except Exception as e:
+        raise RuntimeError(f"连接 {serial} 失败: {e}")
+
+    # 注册调度器（持锁）
     with _lock:
         # 二次校验（防并发重复添加）
         if any(s.name == name for s in schedulers):
             raise ValueError(f"模拟器名 '{name}' 已存在")
-
-        try:
-            device = Device(serial)
-        except Exception as e:
-            raise RuntimeError(f"连接 {serial} 失败: {e}")
 
         tasks = []
         for task_name, cfg in task_specs.items():

@@ -52,6 +52,7 @@ class UI:
         text: str,
         search_area: tuple | None = None,
         timeout: float = 5.0,
+        interval: float = 0.5,
         threshold: float = 0.5,
     ) -> bool:
         end = time.time() + timeout
@@ -62,6 +63,7 @@ class UI:
                 self.device.click(*point)
                 logger.info(f"Click text={text!r} @ {point}")
                 return True
+            time.sleep(interval)
         logger.warning(f"Not found text: {text!r}")
         return False
 

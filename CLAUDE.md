@@ -31,14 +31,14 @@ Python 版本：3.10–3.12（pywebview 依赖 pythonnet，3.13+ 无预构建 wh
 ### 核心层（`core/`）
 
 - **`device.py`** — ADB 设备抽象；截图（`screenshot()`）+ 触控输入（`tap/swipe`），内置 ±4px 坐标抖动防封号
-- **`template.py`** — OpenCV 模板匹配；`Button` 类绑定图片路径 + 搜索区域 + 阈值；`match()` / `match_all()` 返回坐标
+- **`template.py`** — OpenCV 模板匹配；`Button` 类绑定图片路径 + 搜索区域 + 阈值；`match()` 返回坐标；`_crop_roi()` 供 ocr.py 复用
 - **`ocr.py`** — RapidOCR（ONNX）识别中文；`find_text()` 返回文本坐标
 - **`ui.py`** — 高层交互；`click_button()`、`wait_until_appear()`、`click_text()`（OCR 点击）
 - **`scheduler.py`** — `Scheduler`：按间隔循环执行任务，维护状态（idle / running / error）
 - **`runtime.py`** — 全局单例；注册所有 `Scheduler` 实例，线程安全；`add_emulator()` 启动新模拟器线程
 - **`launcher.py`** — 启动 MuMu 实例 + 等待 ADB 连接 + 自动登录游戏
 - **`logger.py`** — 统一日志；500 行环形缓冲区供 Web UI 读取
-- **`updater.py`** — GitHub Releases API 自动更新检查
+- 更新检查逻辑内联于 `ui/winapp.py`（`API.check_update` / `API.download_patch`）
 
 ### 任务层（`tasks/`）
 

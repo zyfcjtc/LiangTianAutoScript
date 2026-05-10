@@ -14,9 +14,11 @@ from core.logger import log_buffer, log_buffer_lock
 
 if getattr(sys, "frozen", False):
     _BASE = Path(sys.executable).parent
+    _ROOT = _BASE
     _HTML_PATH = Path(sys._MEIPASS) / "ui" / "web" / "index.html"
 else:
     _BASE = Path(__file__).parent
+    _ROOT = _BASE.parent
     _HTML_PATH = _BASE / "web" / "index.html"
 
 
@@ -89,11 +91,7 @@ class API:
         ]
 
     def get_version(self) -> str:
-        base = (
-            Path(sys.executable).parent if getattr(sys, "frozen", False)
-            else Path(__file__).parent.parent
-        )
-        p = base / "version.txt"
+        p = _ROOT / "version.txt"
         return p.read_text("utf-8").strip() if p.exists() else "dev"
 
     _REPO = "zyfcjtc/LiangtianAutoScript"
@@ -102,12 +100,7 @@ class API:
     def get_current_info(self) -> dict:
         import os
         from datetime import datetime
-        base = (
-            Path(sys.executable).parent if getattr(sys, "frozen", False)
-            else Path(__file__).parent.parent
-        )
-        # version: version.txt → git branch → "dev"
-        p = base / "version.txt"
+        p = _ROOT / "version.txt"
         if p.exists():
             version = p.read_text("utf-8").strip()
         else:
@@ -115,22 +108,21 @@ class API:
                 import subprocess
                 version = subprocess.check_output(
                     ["git", "branch", "--show-current"],
-                    cwd=str(base), stderr=subprocess.DEVNULL, text=True,
+                    cwd=str(_ROOT), stderr=subprocess.DEVNULL, text=True,
                 ).strip() or "dev"
             except Exception:
                 version = "dev"
 
-        # last update: git log → file mtime → unknown
         try:
             import subprocess
             raw = subprocess.check_output(
                 ["git", "log", "-1", "--format=%ai"],
-                cwd=str(base), stderr=subprocess.DEVNULL, text=True,
+                cwd=str(_ROOT), stderr=subprocess.DEVNULL, text=True,
             ).strip()
             last_update = raw[:19]
         except Exception:
             try:
-                mtime = os.path.getmtime(str(base / "main.py"))
+                mtime = os.path.getmtime(str(_ROOT / "main.py"))
                 last_update = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
             except Exception:
                 last_update = "未知"
@@ -139,12 +131,8 @@ class API:
 
     def check_update(self) -> dict:
         import urllib.request, json
-        base = (
-            Path(sys.executable).parent if getattr(sys, "frozen", False)
-            else Path(__file__).parent.parent
-        )
-        p = base / "version.txt"
-        current = p.read_text("utf-8").strip() if p.exists() else None
+        p = _ROOT / "version.txt"
+        current = p.read_text("utf-8-sig").strip() if p.exists() else None
         try:
             req = urllib.request.Request(
                 self._API,
@@ -172,11 +160,8 @@ class API:
             return {"ok": False, "error": str(exc)}
 
     def download_patch(self) -> dict:
-        import urllib.request, json, zipfile, io
-        base = (
-            Path(sys.executable).parent if getattr(sys, "frozen", False)
-            else Path(__file__).parent.parent
-        )
+        import urllib.request, json, zipfile, io, shutil
+        tmp = _ROOT / "patch_tmp"
         try:
             req = urllib.request.Request(
                 self._API,
@@ -197,9 +182,23 @@ class API:
             with urllib.request.urlopen(dl_req, timeout=120) as resp:
                 raw = resp.read()
             with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-                zf.extractall(str(base))
+                # zip slip 校验
+                for name in zf.namelist():
+                    if name.startswith("/") or ".." in name:
+                        return {"ok": False, "error": f"补丁包含非法路径: {name}"}
+                # 先解到临时目录，成功后再合并
+                if tmp.exists():
+                    shutil.rmtree(tmp)
+                zf.extractall(str(tmp))
+            for item in tmp.iterdir():
+                dest = _ROOT / item.name
+                if dest.exists():
+                    shutil.rmtree(dest) if dest.is_dir() else dest.unlink()
+                shutil.move(str(item), str(_ROOT))
+            shutil.rmtree(tmp, ignore_errors=True)
             return {"ok": True}
         except Exception as exc:
+            shutil.rmtree(tmp, ignore_errors=True)
             return {"ok": False, "error": str(exc)}
 
     def add_emulator(self, data: dict) -> dict:

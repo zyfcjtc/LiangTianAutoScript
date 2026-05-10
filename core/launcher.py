@@ -1,6 +1,7 @@
 import subprocess
 import time
 from pathlib import Path
+from subprocess import DEVNULL
 
 from adbutils import adb
 
@@ -76,7 +77,7 @@ def ensure_running(serial: str, exe: str, instance: int, timeout: int = _LAUNCH_
         cmd = [exe, "-v", str(instance)]
 
     logger.info(f"MuMu instance {instance} offline, launching: {' '.join(cmd)}")
-    subprocess.Popen(cmd)
+    subprocess.Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)
 
     deadline = time.time() + timeout
     while time.time() < deadline:

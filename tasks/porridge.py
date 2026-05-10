@@ -1,12 +1,6 @@
-from core.template import Button
 from core.ui import UI
+from tasks._common import PATHFIND
 from tasks.base import Task
-
-PATHFIND = Button(
-    "main.BTN_PATHFIND",
-    "main/BTN_PATHFIND.png",
-    search_area=(635, 643, 717, 735),
-)
 
 COLLECT_TAP = (238, 508)   # 招揽按钮固定坐标，无需模板匹配
 ENTER_SLEEP = 2.0

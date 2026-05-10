@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from core.template import _crop_roi
+
 _ocr = None
 
 
@@ -20,13 +22,7 @@ def scan_texts(
 ) -> list[tuple[str, tuple[int, int]]]:
     """对区域跑一次 OCR，返回 [(识别文字, (x, y)), ...] 列表（屏幕坐标）。"""
     ocr = _get_ocr()
-    if search_area:
-        x1, y1, x2, y2 = search_area
-        roi = screen[y1:y2, x1:x2]
-        ox, oy = x1, y1
-    else:
-        roi = screen
-        ox, oy = 0, 0
+    roi, ox, oy = _crop_roi(screen, search_area)
 
     result, _ = ocr(roi)
     if not result:

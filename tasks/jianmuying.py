@@ -1,13 +1,7 @@
 from core.logger import logger
-from core.template import Button
 from core.ui import UI
+from tasks._common import PATHFIND
 from tasks.base import Task
-
-PATHFIND = Button(
-    "main.BTN_PATHFIND",
-    "main/BTN_PATHFIND.png",
-    search_area=(635, 643, 717, 735),
-)
 
 PATHFIND_SLEEP = 0.8
 ENTER_SLEEP = 1.5

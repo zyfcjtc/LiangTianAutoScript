@@ -238,8 +238,10 @@ body { font-family: "Microsoft YaHei UI","Segoe UI",system-ui,sans-serif; font-s
 
     <!-- Narrow icon strip: home + one slot per emulator + add -->
     <div class="icon-strip">
-      <div class="si active" id="si-home" title="更新器" onclick="selectStrip('home')" style="position:relative;">⚙
-        <span id="upd-badge" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#EF4444;"></span>
+      <div class="si active" id="si-home" title="主页" onclick="selectStrip('home')" style="position:relative;flex-direction:column;gap:2px;font-size:11px;height:auto;padding:5px 0;">
+        <span style="font-size:15px;">⌂</span>
+        <span style="font-size:9px;letter-spacing:.02em;">主页</span>
+        <span id="upd-badge" style="display:none;position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:#EF4444;"></span>
       </div>
       <!-- Emulator slots injected here by JS -->
       <div id="strip-emu-slots"></div>
@@ -394,6 +396,41 @@ body { font-family: "Microsoft YaHei UI","Segoe UI",system-ui,sans-serif; font-s
         </div>
       </div>
 
+      <!-- ══ Main ══ -->
+      <div class="page" id="page-main">
+        <div style="padding:32px 28px;display:flex;flex-direction:column;gap:20px;max-width:500px;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;">
+              <img src="../../assets/app.ico" style="width:100%;height:100%;object-fit:cover;">
+            </div>
+            <div>
+              <div style="font-size:18px;font-weight:800;color:var(--text);letter-spacing:-.02em;">良田自动脚本</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">LiangTian AutoScript · <span id="main-ver" style="font-family:'Cascadia Code','Consolas',monospace;"></span></div>
+            </div>
+          </div>
+          <div class="card" style="max-width:440px;">
+            <div class="card-hdr"><div class="card-title"><span class="card-bar"></span>关于</div></div>
+            <div style="padding:10px 14px;display:flex;flex-direction:column;gap:0;">
+              <div class="task-info-row">
+                <span class="task-info-label">开源协议</span>
+                <span class="task-info-val">MIT License</span>
+              </div>
+              <div class="task-info-row">
+                <span class="task-info-label">项目地址</span>
+                <a href="#" onclick="api.open_url('https://github.com/zyfcjtc/LiangTianAutoScript'); return false;"
+                   style="color:var(--accent);font-size:12px;text-decoration:none;font-family:'Cascadia Code','Consolas',monospace;">
+                  github.com/zyfcjtc/LiangTianAutoScript
+                </a>
+              </div>
+              <div class="task-info-row" style="border-bottom:none;">
+                <span class="task-info-label">免费开源软件</span>
+                <span style="font-size:11px;color:var(--text-muted);">如付费购买请退款</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ══ Updater ══ -->
       <div class="page" id="page-updater">
         <div style="padding:24px;display:flex;flex-direction:column;gap:16px;">
@@ -452,6 +489,7 @@ window.addEventListener('pywebviewready', async () => {
   const [ver, reg, curInfo] = await Promise.all([api.get_version(), api.get_task_registry(), api.get_current_info()]);
   S.taskReg = reg;
   document.getElementById('sb-ver').textContent    = 'v' + ver;
+  document.getElementById('main-ver').textContent   = 'v' + ver;
   document.getElementById('upd-branch').textContent = curInfo.version;
   document.getElementById('upd-date').textContent   = curInfo.last_update;
   buildAddForm();
@@ -466,7 +504,7 @@ window.addEventListener('pywebviewready', async () => {
 // Clicking the home icon or an emulator icon in the narrow strip changes context.
 function selectStrip(key) {
   S.strip = key;
-  S.navPage = key === 'home' ? 'updater' : 'emu-overview';
+  S.navPage = key === 'home' ? 'main' : 'emu-overview';
   S.task = null;
   S.delConfirm = false; clearTimeout(S.delTimer);
 
@@ -493,7 +531,7 @@ function selectNavPage(navPage, taskName) {
 function showPageForState() {
   let pageId;
   if (S.strip === 'home') {
-    pageId = 'updater';
+    pageId = S.navPage === 'updater' ? 'updater' : 'main';
   } else if (S.navPage === 'emu-overview') {
     pageId = 'emu-overview';
   } else if (S.navPage === 'task-detail') {
@@ -513,6 +551,7 @@ function showPageForState() {
   document.getElementById('page-' + pageId)?.classList.add('active');
 
   const titles = {
+    'main':    '主页',
     'updater': '更新器',
     'emu-overview': S.strip,
     'task-detail': S.task,
@@ -602,7 +641,8 @@ function renderNav() {
   const col = document.getElementById('nav-col');
   if (S.strip === 'home') {
     col.innerHTML = `
-      <div class="nav-item active">更新器</div>
+      <div class="nav-item ${S.navPage === 'main' ? 'active' : ''}" onclick="selectNavPage('main')">主页</div>
+      <div class="nav-item ${S.navPage === 'updater' ? 'active' : ''}" onclick="selectNavPage('updater')">更新器</div>
       <div class="nav-spacer"></div>
     `;
   } else {
