@@ -21,10 +21,8 @@ echo ==> Build
     --icon assets\app.ico ^
     --add-data "assets;assets" ^
     --add-data "ui\web;ui\web" ^
-    --hidden-import pywebio ^
     --hidden-import adbutils ^
     --hidden-import webview ^
-    --collect-all pywebio ^
     --collect-all webview ^
     --collect-all rapidocr_onnxruntime ^
     main.py
