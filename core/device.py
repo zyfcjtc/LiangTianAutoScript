@@ -8,7 +8,7 @@ from adbutils import adb
 from core.logger import logger
 
 CLICK_JITTER_PX = 4
-SLEEP_JITTER_RATIO = 0.15
+SLEEP_JITTER_RATIO = 0.30
 
 
 class Device:
