@@ -3,6 +3,12 @@ from pathlib import Path
 
 import yaml
 
+# 冻结态下，若 exe 旁有外部 tasks/ 目录则优先加载（热更新 sideload）
+if getattr(sys, "frozen", False):
+    _ext = Path(sys.executable).resolve().parent
+    if (_ext / "tasks").exists():
+        sys.path.insert(0, str(_ext))
+
 from core import runtime
 from core.logger import logger
 

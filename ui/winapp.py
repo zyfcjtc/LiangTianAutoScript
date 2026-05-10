@@ -14,10 +14,10 @@ from core.logger import log_buffer, log_buffer_lock
 
 if getattr(sys, "frozen", False):
     _BASE = Path(sys.executable).parent
+    _HTML_PATH = Path(sys._MEIPASS) / "ui" / "web" / "index.html"
 else:
     _BASE = Path(__file__).parent
-
-_HTML_PATH = _BASE / "web" / "index.html"
+    _HTML_PATH = _BASE / "web" / "index.html"
 
 
 class API:
@@ -153,7 +153,11 @@ class API:
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read())
             latest_tag = data["tag_name"]
-            is_new = current is not None and latest_tag != current
+            is_new = current is not None and latest_tag.lstrip("v") != current.lstrip("v")
+            patch_asset = next(
+                (a for a in data.get("assets", []) if a["name"].startswith("patch-")),
+                None,
+            )
             return {
                 "ok": True,
                 "latest": latest_tag,
@@ -161,7 +165,40 @@ class API:
                 "url": data["html_url"],
                 "body": (data.get("body") or "")[:400],
                 "has_update": is_new,
+                "patch_available": patch_asset is not None,
+                "patch_size_kb": round(patch_asset["size"] / 1024) if patch_asset else 0,
             }
+        except Exception as exc:
+            return {"ok": False, "error": str(exc)}
+
+    def download_patch(self) -> dict:
+        import urllib.request, json, zipfile, io
+        base = (
+            Path(sys.executable).parent if getattr(sys, "frozen", False)
+            else Path(__file__).parent.parent
+        )
+        try:
+            req = urllib.request.Request(
+                self._API,
+                headers={"User-Agent": "LiangtianAutoScript-Updater"},
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                release = json.loads(resp.read())
+            patch_asset = next(
+                (a for a in release.get("assets", []) if a["name"].startswith("patch-")),
+                None,
+            )
+            if not patch_asset:
+                return {"ok": False, "error": "此版本无补丁包，请下载完整版"}
+            dl_req = urllib.request.Request(
+                patch_asset["browser_download_url"],
+                headers={"User-Agent": "LiangtianAutoScript-Updater"},
+            )
+            with urllib.request.urlopen(dl_req, timeout=120) as resp:
+                raw = resp.read()
+            with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+                zf.extractall(str(base))
+            return {"ok": True}
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 

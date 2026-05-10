@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>良田自动脚本</title>
+<title>LTAS</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -221,8 +221,10 @@ body { font-family: "Microsoft YaHei UI","Segoe UI",system-ui,sans-serif; font-s
   <!-- Title bar -->
   <div class="titlebar" id="titlebar">
     <div class="tb-logo-zone">
-      <div class="logo-pill">🌾</div>
-      <span class="app-name">良田脚本</span>
+      <div class="logo-pill" style="background:none;padding:0;overflow:hidden;">
+        <img src="../../assets/app.ico" style="width:100%;height:100%;object-fit:cover;border-radius:9px;">
+      </div>
+      <span class="app-name">LTAS</span>
     </div>
     <div class="tb-page-title" id="page-title">总览</div>
     <div class="tb-controls">
@@ -236,7 +238,9 @@ body { font-family: "Microsoft YaHei UI","Segoe UI",system-ui,sans-serif; font-s
 
     <!-- Narrow icon strip: home + one slot per emulator + add -->
     <div class="icon-strip">
-      <div class="si active" id="si-home" title="更新器" onclick="selectStrip('home')">⚙</div>
+      <div class="si active" id="si-home" title="更新器" onclick="selectStrip('home')" style="position:relative;">⚙
+        <span id="upd-badge" style="display:none;position:absolute;top:4px;right:4px;width:7px;height:7px;border-radius:50%;background:#EF4444;"></span>
+      </div>
       <!-- Emulator slots injected here by JS -->
       <div id="strip-emu-slots"></div>
       <div class="si-spacer"></div>
@@ -401,7 +405,7 @@ body { font-family: "Microsoft YaHei UI","Segoe UI",system-ui,sans-serif; font-s
               <div class="task-info-row"><span class="task-info-label">最后更新</span><code class="task-info-val" id="upd-date">—</code></div>
             </div>
             <div style="padding:10px 14px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px;">
-              <button class="btn-primary" id="upd-btn" style="width:100%" onclick="checkUpdate()">检查更新</button>
+              <button class="btn-primary" id="upd-btn" style="width:100%" onclick="checkUpdate(true)">检查更新</button>
               <div id="upd-result" style="font-size:11.5px;font-family:'Cascadia Code','Consolas',monospace;color:var(--text-dim);white-space:pre-wrap;display:none;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;padding:8px 10px;max-height:120px;overflow-y:auto;"></div>
             </div>
           </div>
@@ -435,6 +439,7 @@ const S = {
   taskReg: [],
   delConfirm: false,
   delTimer: null,
+  lastUpdateInfo: null,   // cached result of last check_update call
 };
 
 const DOT_CLS = { starting:'dot-start', idle:'dot-idle', running:'dot-run', stopping:'dot-start', stopped:'dot-stop', error:'dot-err' };
@@ -453,6 +458,8 @@ window.addEventListener('pywebviewready', async () => {
   await poll();
   setInterval(poll, 1500);
   setInterval(pollLogs, 800);
+  // 启动时静默检查更新
+  setTimeout(checkUpdate, 2000);
 });
 
 // ── Strip selection ────────────────────────────────────────────────────────────
@@ -597,7 +604,6 @@ function renderNav() {
     col.innerHTML = `
       <div class="nav-item active">更新器</div>
       <div class="nav-spacer"></div>
-      <div class="nav-add-zone"><div class="nav-add-btn" onclick="showPage('add-emu')">＋ 添加模拟器</div></div>
     `;
   } else {
     const emu = S.emus.find(e => e.name === S.strip) || { name: S.strip, tasks: [] };
@@ -760,12 +766,21 @@ async function deleteEmu() {
 }
 
 // ── Update checker ────────────────────────────────────────────────────────────
-async function checkUpdate() {
+async function checkUpdate(force = false) {
   const btn = document.getElementById('upd-btn');
   const res = document.getElementById('upd-result');
-  btn.disabled = true; btn.textContent = '检查中…';
-  res.style.display = 'none';
-  const r = await api.check_update();
+  // 用缓存结果（手动点击按钮时强制刷新）
+  const r = (!force && S.lastUpdateInfo) ? S.lastUpdateInfo : await (async () => {
+    btn.disabled = true; btn.textContent = '检查中…';
+    res.style.display = 'none';
+    const result = await api.check_update();
+    btn.disabled = false; btn.textContent = '检查更新';
+    return result;
+  })();
+  S.lastUpdateInfo = r;
+  // 红点提示
+  const badge = document.getElementById('upd-badge');
+  if (badge) badge.style.display = (r.ok && r.has_update) ? 'block' : 'none';
   btn.disabled = false; btn.textContent = '检查更新';
   if (!r.ok) {
     res.innerHTML = `<span style="color:#DC2626">检查失败：${esc(r.error)}</span>`;
@@ -773,15 +788,37 @@ async function checkUpdate() {
     return;
   }
   if (r.has_update) {
-    res.innerHTML =
-      `<span style="color:#059669">发现新版本 ${esc(r.latest)}（${esc(r.date)}）</span>\n` +
-      (r.body ? esc(r.body) + '\n' : '') +
-      `\n<a href="${esc(r.url)}" onclick="api.open_url && api.open_url('${esc(r.url)}'); return false;" ` +
-      `style="color:var(--accent);text-decoration:underline;cursor:pointer;">前往下载页面 →</a>`;
+    let html = `<span style="color:#059669">发现新版本 ${esc(r.latest)}（${esc(r.date)}）</span>\n`;
+    if (r.body) html += esc(r.body) + '\n';
+    html += '\n<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;">';
+    if (r.patch_available) {
+      html += `<button class="btn-primary" onclick="downloadPatch()" id="patch-btn">` +
+              `⬇ 下载补丁 (${r.patch_size_kb} KB)</button>`;
+    }
+    html += `<a href="#" onclick="api.open_url('${esc(r.url)}'); return false;" ` +
+            `style="color:var(--accent);text-decoration:underline;cursor:pointer;line-height:26px;">` +
+            `下载完整版 →</a></div>`;
+    res.innerHTML = html;
   } else {
     res.innerHTML = `<span style="color:#059669">✓ 已是最新版本（${esc(r.latest)}）</span>`;
   }
   res.style.display = 'block';
+}
+
+async function downloadPatch() {
+  const btn = document.getElementById('patch-btn');
+  const res = document.getElementById('upd-result');
+  if (btn) { btn.disabled = true; btn.textContent = '下载中…'; }
+  const r = await api.download_patch();
+  if (r.ok) {
+    res.innerHTML = `<span style="color:#059669">✓ 补丁已安装，重启应用后生效</span>`;
+  } else {
+    if (btn) { btn.disabled = false; btn.textContent = '⬇ 重试'; }
+    const errSpan = document.createElement('div');
+    errSpan.style.color = '#DC2626';
+    errSpan.textContent = '下载失败：' + r.error;
+    res.appendChild(errSpan);
+  }
 }
 
 // ── Auto-scroll toggle ────────────────────────────────────────────────────────
