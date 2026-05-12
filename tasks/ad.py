@@ -60,6 +60,7 @@ class AdTask(Task):
             if self._goto_bottom_tab(ui, "观影金扇"):
                 totals["观影金扇"] = self._claim_free_loop(ui, area=CARD_AREA, with_ad=True)
             ui.device.click(*EXIT_PT)
+            ui.device.sleep(SLEEP_NAV)
 
         summary = "  ".join(f"{tab}:{n}" for tab, n in totals.items())
         logger.info(f"看广告完成 — {summary}  合计:{sum(totals.values())}")
