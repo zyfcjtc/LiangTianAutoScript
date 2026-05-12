@@ -84,7 +84,7 @@ class API:
 
     def get_task_registry(self) -> list[dict]:
         from tasks import TASK_REGISTRY
-        _defaults = {"粥棚": 180, "膜拜": 1440, "建木营": 1440}
+        _defaults = {"粥棚": 180, "膜拜": 1440, "建木营": 1440, "看广告": 1440}
         return [
             {"name": k, "default_interval": _defaults.get(k, 60)}
             for k in TASK_REGISTRY
