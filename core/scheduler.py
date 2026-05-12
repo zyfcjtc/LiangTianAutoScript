@@ -33,10 +33,12 @@ class Scheduler:
         self.next_run_at: datetime | None = None
         self.last_error: str | None = None
         self.stop_event = threading.Event()
+        self.wake_event = threading.Event()
         self.thread: threading.Thread | None = None
 
     def stop(self) -> None:
         self.stop_event.set()
+        self.wake_event.set()
         self.status = "stopping"
 
     def _refresh_next(self) -> None:
@@ -86,7 +88,8 @@ class Scheduler:
                 self._refresh_next()
                 wait = max((self.next_run_at - datetime.now()).total_seconds(), 1) if self.next_run_at else 60
                 logger.info(f"Idle, next: {self.next_task} in {int(wait)}s")
-                self.stop_event.wait(timeout=min(wait, 60))
+                self.wake_event.wait(timeout=min(wait, 60))
+                self.wake_event.clear()
 
         self.status = "stopped"
         logger.info(f"Scheduler stopped")

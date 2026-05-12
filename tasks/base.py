@@ -15,5 +15,8 @@ class Task:
     def reschedule(self) -> None:
         self.next_run = datetime.now() + timedelta(minutes=self.interval_minutes)
 
+    def trigger(self) -> None:
+        self.next_run = datetime.now()
+
     def run(self, ui: UI) -> None:
         raise NotImplementedError

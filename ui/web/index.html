@@ -346,6 +346,10 @@ body { font-family: "Microsoft YaHei UI","Segoe UI",system-ui,sans-serif; font-s
               <div class="task-info-row"><span class="task-info-label">状态</span><span id="td-status"></span></div>
               <div class="task-info-row"><span class="task-info-label">下次执行</span><code class="task-info-val" id="td-next"></code></div>
               <div class="task-info-row"><span class="task-info-label">执行间隔</span><code class="task-info-val" id="td-interval"></code></div>
+              <div class="task-info-row" style="border-bottom:none">
+                <span class="task-info-label">操作</span>
+                <button id="td-trigger" class="btn-primary" style="font-size:12px" onclick="triggerTask(S.strip, S.task, this)">立刻运行</button>
+              </div>
             </div>
           </div>
         </div>
@@ -703,7 +707,10 @@ function renderOverview() {
         <td><span class="etag">${esc(emu.name)}</span></td>
         <td><span class="tbadge">${fmtTime(t.next_run)}</span></td>
         <td style="color:var(--text-muted)">${hrs}</td>
-        <td style="text-align:right"><button class="btn-secondary" onclick="selectStrip('${esc(emu.name)}')">查看</button></td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="btn-secondary" style="margin-right:4px" onclick="selectStrip('${esc(emu.name)}')">查看</button>
+          <button class="btn-secondary" onclick="triggerTask('${esc(emu.name)}','${esc(t.name)}',this)">立刻运行</button>
+        </td>
       </tr>`);
     }
   }
@@ -731,7 +738,10 @@ function renderEmuOverview() {
     emu.tasks.filter(t => t.name !== emu.current_task).map(t => `
       <div class="task-row">
         <span class="task-row-name">${esc(t.name)}</span>
-        <span class="task-row-time">${fmtTime(t.next_run)}</span>
+        <span style="display:flex;align-items:center;gap:6px">
+          <span class="task-row-time">${fmtTime(t.next_run)}</span>
+          <button class="btn-secondary" style="padding:1px 8px;font-size:10px" onclick="triggerTask('${esc(emu.name)}','${esc(t.name)}',this)">立刻运行</button>
+        </span>
       </div>
     `).join('') || '<div class="no-task">无任务</div>';
 }
@@ -749,6 +759,8 @@ function renderTaskDetail() {
   document.getElementById('td-status').innerHTML = isRunning
     ? '<span class="status-badge running"><span class="run-pulse"></span>运行中</span>'
     : `<span class="status-badge idle">${fmtTime(task.next_run) === '—' ? '待机' : '等待中'}</span>`;
+  const triggerBtn = document.getElementById('td-trigger');
+  if (triggerBtn) triggerBtn.disabled = isRunning;
 }
 
 // ── Add emulator form ─────────────────────────────────────────────────────────
@@ -859,6 +871,13 @@ async function downloadPatch() {
     errSpan.textContent = '下载失败：' + r.error;
     res.appendChild(errSpan);
   }
+}
+
+// ── Trigger task ─────────────────────────────────────────────────────────────
+async function triggerTask(emuName, taskName, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '已触发'; }
+  await api.trigger_task(emuName, taskName);
+  if (btn) setTimeout(() => { btn.disabled = false; btn.textContent = '立刻运行'; }, 2000);
 }
 
 // ── Auto-scroll toggle ────────────────────────────────────────────────────────

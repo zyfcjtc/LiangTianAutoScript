@@ -225,6 +225,10 @@ class API:
         except Exception as exc:
             return {"ok": False, "error": str(exc)}
 
+    def trigger_task(self, emu_name: str, task_name: str) -> dict:
+        ok = runtime.trigger_task(emu_name, task_name)
+        return {"ok": ok}
+
     def delete_emulator(self, name: str) -> dict:
         threading.Thread(
             target=runtime.remove_emulator, args=(name,), daemon=True,

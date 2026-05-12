@@ -100,6 +100,19 @@ def add_emulator(
     return sched
 
 
+def trigger_task(emu_name: str, task_name: str) -> bool:
+    with _lock:
+        sched = next((s for s in schedulers if s.name == emu_name), None)
+        if not sched:
+            return False
+        task = next((t for t in sched.tasks if t.name == task_name), None)
+        if not task:
+            return False
+        task.trigger()
+        sched.wake_event.set()
+    return True
+
+
 def remove_emulator(name: str, join_timeout: float = 30.0) -> bool:
     with _lock:
         target = next((s for s in schedulers if s.name == name), None)
