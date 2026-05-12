@@ -1,5 +1,4 @@
 from core.ui import UI
-from tasks._common import PATHFIND
 from tasks.base import Task
 
 COLLECT_TAP = (238, 508)   # 招揽按钮固定坐标，无需模板匹配
@@ -10,7 +9,7 @@ CLICK_INTERVAL = 0.4
 
 class PorridgeTask(Task):
     def run(self, ui: UI) -> None:
-        if not ui.click(PATHFIND):
+        if not ui.click_text("寻路", search_area=(600, 700, 720, 830)):
             return
         ui.device.sleep(0.8)
 

@@ -1,6 +1,5 @@
 from core.logger import logger
 from core.ui import UI
-from tasks._common import PATHFIND
 from tasks.base import Task
 
 PATHFIND_SLEEP = 0.8
@@ -29,7 +28,7 @@ FIXED_CLICKS: list[list[tuple[int, int]]] = [
 
 class JianmuyingTask(Task):
     def run(self, ui: UI) -> None:
-        if not ui.click(PATHFIND):
+        if not ui.click_text("寻路", search_area=(600, 700, 720, 830)):
             return
         ui.device.sleep(PATHFIND_SLEEP)
 

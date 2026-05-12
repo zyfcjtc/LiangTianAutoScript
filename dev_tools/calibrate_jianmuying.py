@@ -15,10 +15,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from core.device import Device
 from core.ocr import find_text
-from core.template import match
 from tasks.jianmuying import (
     ENTER_SLEEP,
-    PATHFIND,
     PRE_SWIPE_SLEEP,
     RESET_SWIPE,
     RESET_SWIPES,
@@ -68,7 +66,7 @@ def main():
     dev = Device(SERIAL)
 
     print("[nav] 寻路")
-    pt = match(dev.screenshot(), PATHFIND)
+    pt = find_text(dev.screenshot(), "寻路", search_area=(600, 700, 720, 830))
     if pt is None:
         print("寻路按钮未找到，请确认在主界面")
         return
