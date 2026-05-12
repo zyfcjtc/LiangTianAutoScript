@@ -6,7 +6,8 @@ from core.ui import UI
 from tasks.base import Task
 
 # ── 商城入口 ─────────────────────────────────────────────
-MALL_ENTRY_AREA  = (0, 260, 200, 310)    # 主界面「商城」@ (51, 283)
+MALL_ENTRY_AREA      = (0, 260, 200, 310)   # 主界面「商城」@ (51, 283)
+PRIVILEGE_ENTRY_AREA = (260, 260, 380, 310) # 主界面「特权」@ (315, 284)
 
 # ── 底部 nav ─────────────────────────────────────────────
 BOTTOM_NAV_AREA  = (0, 1230, 720, 1280)
@@ -23,9 +24,6 @@ CARD_AREA        = (50, 480, 680, 1200)  # 扫「免费」「售罄」
 # ── 弹窗 ─────────────────────────────────────────────────
 DIALOG_AD_AREA   = (300, 790, 680, 870)  # 「观看广告」按钮 @ (490, 822)
 POPUP_DISMISS_PT = (650, 200)            # 弹窗外空白，点击关闭奖励弹窗
-
-# ── 退出 ─────────────────────────────────────────────────
-PRIVILEGE_ENTRY_AREA = (260, 260, 380, 310)
 
 EXIT_PT          = (55, 1210)
 
@@ -96,7 +94,13 @@ class AdTask(Task):
     def _claim_free_loop(self, ui: UI, area: tuple, with_ad: bool) -> int:
         end = time.time() + SAFETY_TIMEOUT
         claimed = 0
-        skipped: set[tuple[int, int]] = set()  # 已确认售罄的坐标
+        skipped: set[tuple[int, int]] = set()
+
+        def _skip(reason: str) -> None:
+            logger.debug(f"  {reason}，跳过 {pt}")
+            skipped.add(pt)
+            ui.device.click(*POPUP_DISMISS_PT)
+            ui.device.sleep(0.5)
 
         while time.time() < end:
             hits = scan_texts(ui.device.screenshot(), search_area=area)
@@ -114,20 +118,11 @@ class AdTask(Task):
             # 扫全屏检查「已售罄」
             post = scan_texts(ui.device.screenshot())
             if any("已售罄" in t for t, _ in post):
-                logger.debug(f"  已售罄，跳过 {pt}")
-                skipped.add(pt)
-                ui.device.click(*POPUP_DISMISS_PT)
-                ui.device.sleep(0.5)
-                continue
+                _skip("已售罄"); continue
 
             if with_ad:
                 if not ui.click_text("观看广告", search_area=DIALOG_AD_AREA, timeout=5.0):
-                    # 弹窗里没有「观看广告」，视为已领取/售罄，跳过
-                    logger.debug(f"  观看广告未出现，跳过 {pt}")
-                    skipped.add(pt)
-                    ui.device.click(*POPUP_DISMISS_PT)
-                    ui.device.sleep(0.5)
-                    continue
+                    _skip("观看广告未出现"); continue
                 ui.device.sleep(SLEEP_AD)
             ui.device.click(*POPUP_DISMISS_PT)
             ui.device.sleep(SLEEP_CLAIM)
