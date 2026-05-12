@@ -28,7 +28,7 @@ FIXED_CLICKS: list[list[tuple[int, int]]] = [
 
 class JianmuyingTask(Task):
     def run(self, ui: UI) -> None:
-        if not ui.click_text("寻路", search_area=(600, 700, 720, 830), timeout=15.0):
+        if not ui.click_text("路", search_area=(600, 700, 720, 830), timeout=15.0):
             return
         ui.device.sleep(PATHFIND_SLEEP)
 
