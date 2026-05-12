@@ -196,6 +196,9 @@ class API:
                     shutil.rmtree(dest) if dest.is_dir() else dest.unlink()
                 shutil.move(str(item), str(_ROOT))
             shutil.rmtree(tmp, ignore_errors=True)
+            (_ROOT / "version.txt").write_text(
+                release["tag_name"].lstrip("v") + "\n", encoding="utf-8"
+            )
             return {"ok": True}
         except Exception as exc:
             shutil.rmtree(tmp, ignore_errors=True)
