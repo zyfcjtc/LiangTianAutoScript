@@ -4,14 +4,12 @@ setlocal
 for /f "tokens=*" %%i in ('git describe --tags --abbrev=0 2^>nul') do set TAG=%%i
 if "%TAG%"=="" set TAG=vdev
 set VERSION=%TAG:~1%
+set VERSION=%VERSION: =%
 echo ==^> Version: %VERSION%
 
 echo %VERSION%> version.txt
 
 echo ==^> Clean old artifacts
-if exist Build del /f Build
-if exist Clean del /f Clean
-if exist Version del /f Version
 if exist build rmdir /s /q build
 if exist dist  rmdir /s /q dist
 if exist LiangtianAutoScript.spec del LiangtianAutoScript.spec
