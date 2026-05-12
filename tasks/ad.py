@@ -25,7 +25,9 @@ DIALOG_AD_AREA   = (300, 790, 680, 870)  # 「观看广告」按钮 @ (490, 822)
 POPUP_DISMISS_PT = (650, 200)            # 弹窗外空白，点击关闭奖励弹窗
 
 # ── 退出 ─────────────────────────────────────────────────
-EXIT_PT          = (55, 1210)            # 商城左下角退出箭头
+PRIVILEGE_ENTRY_AREA = (260, 260, 380, 310)
+
+EXIT_PT          = (55, 1210)
 
 # ── 时序 ─────────────────────────────────────────────────
 SLEEP_NAV      = 1.5
@@ -53,6 +55,14 @@ class AdTask(Task):
                     totals[top_tab] = self._claim_free_loop(ui, area=CARD_AREA, with_ad=True)
 
         ui.device.click(*EXIT_PT)
+        ui.device.sleep(SLEEP_NAV)
+
+        if ui.click_text("特权", search_area=PRIVILEGE_ENTRY_AREA):
+            ui.device.sleep(SLEEP_NAV)
+            if self._goto_bottom_tab(ui, "观影金扇"):
+                totals["观影金扇"] = self._claim_free_loop(ui, area=CARD_AREA, with_ad=True)
+            ui.device.click(*EXIT_PT)
+
         summary = "  ".join(f"{tab}:{n}" for tab, n in totals.items())
         logger.info(f"看广告完成 — {summary}  合计:{sum(totals.values())}")
 
