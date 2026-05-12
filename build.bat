@@ -1,7 +1,8 @@
 @echo off
 setlocal
 
-for /f "tokens=*" %%i in ('git describe --tags --abbrev=0 2^>nul') do set TAG=%%i
+for /f "tokens=*" %%i in ('git tag --sort=-version:refname 2^>nul') do (set TAG=%%i & goto :ver_done)
+:ver_done
 if "%TAG%"=="" set TAG=vdev
 set VERSION=%TAG:~1%
 set VERSION=%VERSION: =%
