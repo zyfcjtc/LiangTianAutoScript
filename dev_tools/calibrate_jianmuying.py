@@ -66,7 +66,7 @@ def main():
     dev = Device(SERIAL)
 
     print("[nav] 寻路")
-    pt = find_text(dev.screenshot(), "寻路", search_area=(600, 700, 720, 830))
+    pt = find_text(dev.screenshot(), "路", search_area=(600, 700, 720, 830))
     if pt is None:
         print("寻路按钮未找到，请确认在主界面")
         return
